@@ -5,31 +5,182 @@ import DownIcon from "./assets/down.svg?react";
 import ExpandedSkillCard from "./Home/ExpandedSkillCard";
 import SkillCard from "./Home/SkillCard";
 import ProjectCard from "./Home/ProjectCard";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { sleep } from "./utils";
 
 export default function App() {
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      document.body.style.transition =
-        "transform 1000ms cubic-bezier(0.4,0,0.2,1), opacity 1500ms cubic-bezier(0.4,0,0.2,1)";
-      document.body.style.transform = "";
-      document.body.style.opacity = "1";
-    }, 10);
+  const introContainer = useRef<HTMLDivElement>(null);
 
-    return () => clearTimeout(timeoutId);
+  useEffect(() => {
+    const stop = animate();
+    return () => stop();
   }, []);
+
+  function animate() {
+    const minSize = 25;
+    const maxSize = 150;
+    const minTime = 3000;
+    const maxTime = 4000;
+    const minSleep = 500;
+    const maxSleep = 1000;
+    const colors = {
+      //   default: "hsl(343,88%,16%)",
+      default: "hsl(244,47%,20%)",
+      hover: "hsl(244,47%,40%)",
+      hold: "hsl(244,47%,60%)",
+    };
+
+    let stop = false;
+
+    (async () => {
+      while (true) {
+        if (stop) {
+          break;
+        }
+
+        await sleep(
+          Math.floor(minSleep + Math.random() * (maxSleep - minSleep)),
+        );
+
+        if (!introContainer.current) {
+          continue;
+        }
+
+        const { width: maxRight, height: maxBottom } =
+          introContainer.current.getBoundingClientRect();
+
+        const size = Math.floor(minSize + Math.random() * (maxSize - minSize));
+        const inTime = Math.floor(
+          minTime + Math.random() * (maxTime - minTime),
+        );
+        const outTime = Math.floor(
+          minTime + Math.random() * (maxTime - minTime),
+        );
+        const xLocation = Math.floor(Math.random() * maxRight);
+        const yLocation = Math.floor(Math.random() * maxBottom);
+
+        const lightContainer = document.createElement("div");
+        lightContainer.className = "rounded-full z-0 opacity-0 absolute flex";
+        lightContainer.style.transition = `opacity ${inTime}ms ease-in-out`;
+        lightContainer.style.width = size * 3 + "px";
+        lightContainer.style.height = size * 3 + "px";
+        // lightContainer.style.backgroundColor = "rgba(0,0,0,1.0)";
+        lightContainer.style.left = xLocation + "px";
+        lightContainer.style.top = yLocation + "px";
+
+        const light = document.createElement("div");
+        light.className = "size-0 rounded-full m-auto";
+        light.style.transition = `box-shadow 150ms ease-in-out`;
+        light.style.boxShadow = `0 0 ${size}px ${size}px ${colors.default}`;
+
+        setupLightMouseEvents(
+          lightContainer,
+          light,
+          xLocation,
+          yLocation,
+          size,
+          colors,
+        );
+
+        lightContainer.append(light);
+
+        introContainer.current.prepend(lightContainer);
+        setupLightTimeouts(lightContainer, inTime, outTime);
+      }
+    })();
+
+    return () => {
+      stop = true;
+    };
+  }
+
+  function setupLightMouseEvents(
+    container: HTMLDivElement,
+    light: HTMLDivElement,
+    x: number,
+    y: number,
+    size: number,
+    colors: { default: string; hover: string; hold: string },
+  ) {
+    let holding = false;
+    let hovering = false;
+    let offsetY = 0;
+    let offsetX = 0;
+
+    container.onmousedown = (e) => {
+      holding = true;
+      container.classList.replace("z-0", "z-10");
+      offsetX = x - e.x;
+      offsetY = y - e.y;
+      light.style.boxShadow = `0 0 ${size}px ${size}px ${colors.hold}`;
+    };
+
+    container.onmouseenter = () => {
+      hovering = true;
+      if (!holding) {
+        light.style.boxShadow = `0 0 ${size}px ${size}px ${colors.hover}`;
+      }
+    };
+
+    container.onmouseleave = () => {
+      hovering = false;
+      if (!holding) {
+        light.style.boxShadow = `0 0 ${size}px ${size}px ${colors.default}`;
+      }
+    };
+
+    container.onmouseup = () => {
+      holding = false;
+      container.classList.replace("z-10", "z-0");
+      if (!hovering) {
+        light.style.boxShadow = `0 0 ${size}px ${size}px ${colors.default}`;
+      } else {
+        light.style.boxShadow = `0 0 ${size}px ${size}px ${colors.hover}`;
+      }
+    };
+
+    container.onmousemove = (e) => {
+      if (holding && e.buttons === 1) {
+        x = e.x + offsetX;
+        y = e.y + offsetY;
+        container.style.left = x + "px";
+        container.style.top = y + "px";
+      }
+    };
+  }
+
+  function setupLightTimeouts(
+    container: HTMLDivElement,
+    inTime: number,
+    outTime: number,
+  ) {
+    setTimeout(() => {
+      container.classList.replace("opacity-0", "opacity-100");
+
+      setTimeout(() => {
+        container.style.transition = `opacity ${outTime}ms ease-in-out`;
+
+        setTimeout(() => {
+          container.classList.replace("opacity-100", "opacity-0");
+
+          setTimeout(() => {
+            container.remove();
+          }, outTime);
+        }, 50);
+      }, inTime);
+    }, 50);
+  }
 
   return (
     <>
       <Header />
 
-      <div className="bg-gradient-to-br from-indigo-950 to-dark-900 to-50%">
-        <div
-          className={
-            "flex flex-row py-40" + " mx-auto w-full lg:max-w-4xl xl:max-w-6xl"
-          }
-        >
-          <div className="flex-1 text-4xl border-s-4 border-indigo-500 ps-8 py-4">
+      <div
+        ref={introContainer}
+        className="bg-gradient-to-br from-[hsla(244,47%,20%,0.25)] via-dark-900 to-[hsla(244,47%,20%,0.25)] relative overflow-hidden"
+      >
+        <div className="flex flex-row py-40 mx-auto w-full lg:max-w-4xl xl:max-w-6xl pointer-events-none select-none">
+          <div className="flex-1 text-4xl border-s-4 border-indigo-500 ps-8 py-4 z-10">
             Lorem ipsum dolor sit amet consectetur adipisicing elit. Dolor neque
             iste cupiditate perferendis, necessitatibus quod quasi soluta,
             debitis cumque accusamus nulla quia qui labore recusandae maxime
@@ -40,12 +191,10 @@ export default function App() {
             ducimus fugit. Delectus fugiat velit cumque?
           </div>
 
-          <div className="w-1 ms-12 me-8 bg-indigo-500" />
-
-          <div className="flex flex-col justify-evenly text-3xl gap-8 py-8">
+          <div className="flex flex-col justify-evenly text-3xl gap-8 py-8 border-s-4 ms-16 ps-8 border-indigo-500 z-10">
             <a
               href="/about-me"
-              className="flex bg-dark-700 p-4 rounded-md border-2 border-indigo-500"
+              className="flex bg-dark-700 p-4 rounded-md border-2 border-indigo-500 pointer-events-auto"
             >
               <span className="text-left text-white">
                 About my
@@ -58,7 +207,7 @@ export default function App() {
 
             <a
               href="#skills"
-              className="flex bg-dark-700 p-4 rounded-md border-2 border-indigo-500"
+              className="flex bg-dark-700 p-4 rounded-md border-2 border-indigo-500 pointer-events-auto"
             >
               <span className="text-left text-white">
                 My technical
@@ -71,7 +220,7 @@ export default function App() {
 
             <a
               href="#projects"
-              className="flex bg-dark-700 p-4 rounded-md border-2 border-indigo-500"
+              className="flex bg-dark-700 p-4 rounded-md border-2 border-indigo-500 pointer-events-auto"
             >
               <span className="text-left text-white">
                 Projects I<br />
