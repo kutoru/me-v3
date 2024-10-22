@@ -1,243 +1,240 @@
 import Header from "./Header/Header";
-import UpIcon from "./assets/up.svg?react";
-import RightIcon from "./assets/right.svg?react";
-import DownIcon from "./assets/down.svg?react";
 import ExpandedSkillCard from "./Home/ExpandedSkillCard";
 import SkillCard from "./Home/SkillCard";
 import ProjectCard from "./Home/ProjectCard";
-import { useEffect, useRef } from "react";
-import { sleep } from "./utils";
+import { useRef } from "react";
+import IntroButton from "./Home/IntroButton";
+import useLights from "./hooks/useLights";
+import { useGSAP } from "@gsap/react";
+import { gsap } from "gsap";
+import diagonalLinesSvg from "./assets/diagonal-lines.svg";
+import useHeader from "./hooks/useHeader";
 
 export default function App() {
-  const introContainer = useRef<HTMLDivElement>(null);
+  const header = useRef<HTMLDivElement>(null);
+  const [shown, setShown, headerHeight, freezeFor] = useHeader(header);
 
-  useEffect(() => {
-    const stop = animate();
-    return () => stop();
-  }, []);
+  const introSection = useRef<HTMLDivElement>(null);
+  useLights(introSection);
 
-  function animate() {
-    const minSize = 25;
-    const maxSize = 150;
-    const minTime = 3000;
-    const maxTime = 4000;
-    const minSleep = 500;
-    const maxSleep = 1000;
-    const colors = {
-      //   default: "hsl(343,88%,16%)",
-      default: "hsl(244,47%,20%)",
-      hover: "hsl(244,47%,40%)",
-      hold: "hsl(244,47%,60%)",
-    };
+  const projectSection = useRef<HTMLDivElement>(null);
+  useLights(projectSection);
 
-    let stop = false;
+  const introText = useRef<HTMLDivElement>(null);
+  const introButtons = useRef<HTMLDivElement>(null);
+  const projectContainer = useRef<HTMLDivElement>(null);
 
-    (async () => {
-      while (true) {
-        if (stop) {
-          break;
-        }
+  useGSAP(() => {
+    const textCleanup = animateIntroText();
+    animateIntroButtons();
+    animateProjects();
 
-        await sleep(
-          Math.floor(minSleep + Math.random() * (maxSleep - minSleep)),
-        );
+    return () => textCleanup();
+  }, {});
 
-        if (!introContainer.current) {
-          continue;
-        }
+  function animateIntroText() {
+    // getting the data to work with
 
-        const { width: maxRight, height: maxBottom } =
-          introContainer.current.getBoundingClientRect();
+    const text = introText.current!.textContent!;
+    const maxWidth = introText.current!.getBoundingClientRect().width;
+    const parentWidth =
+      introText.current!.parentElement!.getBoundingClientRect().width;
 
-        const size = Math.floor(minSize + Math.random() * (maxSize - minSize));
-        const inTime = Math.floor(
-          minTime + Math.random() * (maxTime - minTime),
-        );
-        const outTime = Math.floor(
-          minTime + Math.random() * (maxTime - minTime),
-        );
-        const xLocation = Math.floor(Math.random() * maxRight);
-        const yLocation = Math.floor(Math.random() * maxBottom);
+    // creating a temporary span to track the width
 
-        const lightContainer = document.createElement("div");
-        lightContainer.className = "rounded-full z-0 opacity-0 absolute flex";
-        lightContainer.style.transition = `opacity ${inTime}ms ease-in-out`;
-        lightContainer.style.width = size * 3 + "px";
-        lightContainer.style.height = size * 3 + "px";
-        // lightContainer.style.backgroundColor = "rgba(0,0,0,1.0)";
-        lightContainer.style.left = xLocation + "px";
-        lightContainer.style.top = yLocation + "px";
+    const tempSpan = document.createElement("span");
+    tempSpan.style.fontSize = "36px"; // text-4xl
+    tempSpan.style.position = "fixed";
+    tempSpan.style.top = "-1000px";
+    tempSpan.style.maxWidth = maxWidth + "px";
+    document.body.append(tempSpan);
 
-        const light = document.createElement("div");
-        light.className = "size-0 rounded-full m-auto";
-        light.style.transition = `box-shadow 150ms ease-in-out`;
-        light.style.boxShadow = `0 0 ${size}px ${size}px ${colors.default}`;
+    // adding word by word to the span and checking if it has reached max width
+    // if it did, it means that there is a new line to be added
 
-        setupLightMouseEvents(
-          lightContainer,
-          light,
-          xLocation,
-          yLocation,
-          size,
-          colors,
-        );
+    const words = text.split(" ");
+    const lines = [];
+    let prevLine = "";
 
-        lightContainer.append(light);
+    for (let i = 0; i < words.length; i++) {
+      tempSpan.textContent += words[i] + " ";
+      const currWidth = tempSpan.getBoundingClientRect().width;
 
-        introContainer.current.prepend(lightContainer);
-        setupLightTimeouts(lightContainer, inTime, outTime);
+      if (currWidth === maxWidth) {
+        lines.push(prevLine.trim());
+        tempSpan.textContent = words[i] + " ";
       }
-    })();
+
+      prevLine = tempSpan.textContent!;
+    }
+
+    // finally checking for a remaining line and removing the span
+
+    if (tempSpan.textContent!.length) {
+      lines.push(prevLine.trim());
+    }
+
+    tempSpan.remove();
+
+    // updating the introText element with the new lines as separate divs
+
+    introText.current!.innerHTML = "";
+
+    const lineElements = lines.map((line) => {
+      const lineElement = document.createElement("div");
+      lineElement.innerHTML = line;
+      introText.current!.append(lineElement);
+      return lineElement;
+    });
+
+    // and finally, here goes the animation for the lines
+
+    lineElements.forEach((e) => {
+      gsap.to(e, {
+        scrollTrigger: {
+          trigger: e,
+          toggleActions: "restart none reverse none",
+          start: "top 5%",
+          end: "top -25%",
+          scrub: 3,
+        },
+        x: parentWidth * -1,
+      });
+    });
+
+    lineElements.forEach((e, i) => {
+      gsap.from(e, {
+        x: parentWidth * -1,
+        duration: 2,
+        ease: "power2.out",
+        delay: 0.1 * i,
+      });
+    });
+
+    // cleanup since react renders twice
 
     return () => {
-      stop = true;
+      introText.current!.innerHTML = text;
     };
   }
 
-  function setupLightMouseEvents(
-    container: HTMLDivElement,
-    light: HTMLDivElement,
-    x: number,
-    y: number,
-    size: number,
-    colors: { default: string; hover: string; hold: string },
-  ) {
-    let holding = false;
-    let hovering = false;
-    let offsetY = 0;
-    let offsetX = 0;
+  function animateIntroButtons() {
+    const buttonChildren = Array.from(introButtons.current!.children);
+    const buttonContWidth = introButtons.current!.getBoundingClientRect().width;
 
-    container.onmousedown = (e) => {
-      holding = true;
-      container.classList.replace("z-0", "z-10");
-      offsetX = x - e.x;
-      offsetY = y - e.y;
-      light.style.boxShadow = `0 0 ${size}px ${size}px ${colors.hold}`;
-    };
+    buttonChildren.forEach((e) => {
+      gsap.to(e, {
+        scrollTrigger: {
+          trigger: e,
+          toggleActions: "restart none reverse none",
+          start: "top 0%",
+          end: "top -25%",
+          scrub: 3,
+        },
+        x: buttonContWidth * -1,
+      });
+    });
 
-    container.onmouseenter = () => {
-      hovering = true;
-      if (!holding) {
-        light.style.boxShadow = `0 0 ${size}px ${size}px ${colors.hover}`;
-      }
-    };
+    buttonChildren.forEach((e, i) => {
+      gsap.from(e, {
+        x: buttonContWidth * -1,
+        duration: 2,
+        ease: "power2.out",
+        delay: 0.3 * i,
+      });
+    });
 
-    container.onmouseleave = () => {
-      hovering = false;
-      if (!holding) {
-        light.style.boxShadow = `0 0 ${size}px ${size}px ${colors.default}`;
-      }
-    };
-
-    container.onmouseup = () => {
-      holding = false;
-      container.classList.replace("z-10", "z-0");
-      if (!hovering) {
-        light.style.boxShadow = `0 0 ${size}px ${size}px ${colors.default}`;
-      } else {
-        light.style.boxShadow = `0 0 ${size}px ${size}px ${colors.hover}`;
-      }
-    };
-
-    container.onmousemove = (e) => {
-      if (holding && e.buttons === 1) {
-        x = e.x + offsetX;
-        y = e.y + offsetY;
-        container.style.left = x + "px";
-        container.style.top = y + "px";
-      }
-    };
+    const tl = gsap.timeline({ repeat: -1, yoyo: true });
+    tl.to(buttonChildren[1], {
+      boxShadow: "inset 0 0 20px 0 rgba(99,102,241,0.25)",
+      duration: 2,
+      ease: "sine.inOut",
+      delay: 1,
+    });
   }
 
-  function setupLightTimeouts(
-    container: HTMLDivElement,
-    inTime: number,
-    outTime: number,
-  ) {
-    setTimeout(() => {
-      container.classList.replace("opacity-0", "opacity-100");
+  function animateProjects() {
+    const elementWidth =
+      projectContainer.current!.getBoundingClientRect().width;
+    const offsetWidth = (window.innerWidth - elementWidth) / 2 + elementWidth;
 
-      setTimeout(() => {
-        container.style.transition = `opacity ${outTime}ms ease-in-out`;
-
-        setTimeout(() => {
-          container.classList.replace("opacity-100", "opacity-0");
-
-          setTimeout(() => {
-            container.remove();
-          }, outTime);
-        }, 50);
-      }, inTime);
-    }, 50);
+    Array.from(projectContainer.current!.children).forEach((e, i) => {
+      gsap.from(e, {
+        scrollTrigger: {
+          trigger: e,
+          toggleActions: "restart none none reverse",
+          start: "top 75%",
+        },
+        x: i % 2 == 0 ? offsetWidth * -1 : offsetWidth,
+        ease: "power2.out",
+        duration: 2,
+      });
+    });
   }
 
   return (
     <>
-      <Header />
+      <Header ref={header} />
 
       <div
-        ref={introContainer}
-        className="bg-gradient-to-br from-[hsla(244,47%,20%,0.25)] via-dark-900 to-[hsla(244,47%,20%,0.25)] relative overflow-hidden"
+        ref={introSection}
+        className="bg-gradient-to-br from-[hsla(244,47%,20%,0.33)] via-dark-900 to-[hsla(244,47%,20%,0.25)] relative overflow-hidden"
+        style={{
+          marginTop: `${headerHeight}px`,
+          height: `calc(100dvh - ${headerHeight}px)`,
+        }}
       >
-        <div className="flex flex-row py-40 mx-auto w-full lg:max-w-4xl xl:max-w-6xl pointer-events-none select-none">
-          <div className="flex-1 text-4xl border-s-4 border-indigo-500 ps-8 py-4 z-10">
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Dolor neque
-            iste cupiditate perferendis, necessitatibus quod quasi soluta,
-            debitis cumque accusamus nulla quia qui labore recusandae maxime
-            tempora ex vitae nihil corrupti rem dolorum. Quibusdam reiciendis
-            aut alias pariatur eos laborum, similique minima quas eum earum nisi
-            fugiat nesciunt illum nostrum maxime perspiciatis doloribus facere
-            vero totam placeat. Earum, voluptas laborum. atque repudiandae
-            ducimus fugit. Delectus fugiat velit cumque?
-          </div>
+        <div className="flex mx-auto size-full lg:max-w-4xl xl:max-w-6xl pointer-events-none select-none">
+          <div className="flex flex-row my-auto">
+            <div className="flex-1 text-4xl border-s-4 border-indigo-500 ps-8 py-4 z-20 overflow-hidden">
+              <div ref={introText}>
+                Lorem ipsum dolor sit amet consectetur adipisicing elit. Dolor
+                neque iste cupiditate perferendis, necessitatibus quod quasi
+                soluta, debitis cumque accusamus nulla quia qui labore
+                recusandae maxime tempora ex vitae nihil corrupti rem dolorum.
+                Quibusdam reiciendis aut alias pariatur eos laborum, similique
+                minima quas eum earum nisi fugiat nesciunt illum nostrum maxime
+                perspiciatis doloribus facere vero totam placeat. Earum,
+                voluptas laborum. atque repudiandae ducimus fugit. Delectus
+                fugiat velit cumque?
+              </div>
+            </div>
 
-          <div className="flex flex-col justify-evenly text-3xl gap-8 py-8 border-s-4 ms-16 ps-8 border-indigo-500 z-10">
-            <a
-              href="/about-me"
-              className="flex bg-dark-700 p-4 rounded-md border-2 border-indigo-500 pointer-events-auto"
+            <div
+              ref={introButtons}
+              className="flex flex-col justify-evenly text-3xl gap-8 py-8 border-s-4 ms-16 ps-8 border-indigo-500 z-20 overflow-hidden"
             >
-              <span className="text-left text-white">
+              <IntroButton href="/about-me" onClick={() => {}} icon="up">
                 About my
                 <br />
                 journey
-              </span>
-              <div className="flex-1 min-w-4" />
-              <UpIcon className="my-auto size-10" />
-            </a>
+              </IntroButton>
 
-            <a
-              href="#skills"
-              className="flex bg-dark-700 p-4 rounded-md border-2 border-indigo-500 pointer-events-auto"
-            >
-              <span className="text-left text-white">
+              <IntroButton href="#skills" onClick={() => {}} icon="right">
                 My technical
                 <br />
                 skills
-              </span>
-              <div className="flex-1 min-w-4" />
-              <RightIcon className="my-auto size-10" />
-            </a>
+              </IntroButton>
 
-            <a
-              href="#projects"
-              className="flex bg-dark-700 p-4 rounded-md border-2 border-indigo-500 pointer-events-auto"
-            >
-              <span className="text-left text-white">
+              <IntroButton href="#projects" onClick={() => {}} icon="down">
                 Projects I<br />
                 worked on
-              </span>
-              <div className="flex-1 min-w-4" />
-              <DownIcon className="my-auto size-10" />
-            </a>
+              </IntroButton>
+            </div>
           </div>
         </div>
       </div>
 
       <div
         id="skills"
-        className="bg-dark-600 w-full border-y-2 border-indigo-500"
+        className="bg-gradient-to-b from-dark-500 via-20% via-dark-550 to-100% to-dark-600 w-full border-y-2 border-indigo-500 relative"
       >
-        <div className=" mx-auto w-full lg:max-w-4xl xl:max-w-6xl py-8">
+        <div
+          className="absolute top-0 left-0 size-full z-0"
+          style={{ backgroundImage: `url(${diagonalLinesSvg})` }}
+        />
+
+        <div className="mx-auto w-full lg:max-w-4xl xl:max-w-6xl py-8 z-10 relative">
           <div className="text-center text-4xl">Technical skills</div>
 
           <div className="text-center text-gray-400 mt-4 cursor-default">
@@ -299,12 +296,15 @@ export default function App() {
 
       <div
         id="projects"
-        className="bg-gradient-to-tl from-indigo-950 to-dark-900 to-25%"
+        ref={projectSection}
+        className="bg-gradient-to-bl from-[hsla(244,47%,20%,0.33)] via-dark-900 to-[hsla(244,47%,20%,0.05)] via-25% relative overflow-hidden"
       >
         <div className="mx-auto w-full lg:max-w-4xl xl:max-w-6xl py-8">
-          <div className="text-center text-4xl mb-8">My experience</div>
+          <div className="relative text-center text-4xl mb-8">
+            <span className="relative z-20">My experience</span>
+          </div>
 
-          <div className="flex gap-8 flex-col">
+          <div ref={projectContainer} className="flex gap-8 flex-col">
             <ProjectCard
               name="Miku Notes"
               link="miku-notes"
@@ -346,7 +346,8 @@ export default function App() {
           <div className="text-center mt-8">
             <a
               href="/projects"
-              className="text-4xl text-indigo-400 hover:underline active:text-indigo-500 cursor-pointer select-none"
+              onClick={(e) => e.preventDefault()}
+              className="text-4xl text-indigo-400 hover:underline active:text-indigo-500 cursor-pointer select-none relative z-20"
             >
               All projects
             </a>

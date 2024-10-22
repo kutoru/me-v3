@@ -1,9 +1,13 @@
 import HeaderButton from "./HeaderButton";
 import SlashIcon from "../assets/slash.svg?react";
+import { forwardRef } from "react";
 
-export default function Header() {
+const Header = forwardRef<HTMLDivElement>(({}, ref) => {
   return (
-    <div className="h-16 bg-dark-700 border-b-2 border-indigo-500 p-3 flex flex-row">
+    <div
+      ref={ref}
+      className="h-16 bg-dark-700 border-b-2 border-indigo-500 p-3 flex flex-row fixed left-0 w-full z-30"
+    >
       <HeaderButton icon="home" href="/" />
 
       <SlashIcon className="fill-white size-7 my-auto" />
@@ -25,4 +29,6 @@ export default function Header() {
       />
     </div>
   );
-}
+});
+
+export default Header;

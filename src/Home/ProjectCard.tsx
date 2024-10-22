@@ -56,7 +56,7 @@ export default function ProjectCard({
   }
 
   return (
-    <div className="group/card border-2 border-white flex rounded-md overflow-hidden bg-dark-800">
+    <div className="group/card border-2 border-white flex rounded-md overflow-hidden bg-dark-800 bg-opacity-75 z-20">
       {imgOnRight ? getTextSection() : getImageSection()}
       <div className="flex-none w-0.5 bg-white" />
       {imgOnRight ? getImageSection() : getTextSection()}

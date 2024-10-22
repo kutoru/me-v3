@@ -6,7 +6,7 @@ export default function SkillCard({
   percentage: number;
 }) {
   return (
-    <div className="bg-dark-700 border-2 rounded-md border-white p-3 flex flex-col gap-3 flex-none text-xl">
+    <div className="bg-dark-700 rounded-md p-3 flex flex-col gap-3 flex-none text-xl">
       <div className="text-center">{name}</div>
 
       <div className="flex gap-3">
