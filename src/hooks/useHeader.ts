@@ -27,7 +27,6 @@ export default function useHeader(
   }, [header, height]);
 
   useEffect(() => {
-    console.log(offsetY);
     header.current!.style.top = offsetY + "px";
   }, [header, offsetY]);
 
