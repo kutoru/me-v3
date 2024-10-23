@@ -24,6 +24,8 @@ export default function PathTest() {
   const [points, setPoints] = useState<Point[]>([]);
 
   useEffect(() => {
+    const s = Date.now();
+
     const startPoint: Point = {
       top: 200,
       left: 100,
@@ -48,14 +50,103 @@ export default function PathTest() {
 
     const newLines = createLines(newPoints);
 
-    setPoints([a, ...newPoints]);
-    setLines([line, ...newLines]);
+    const newEndPoint: Point = {
+      top: 300,
+      left: 100,
+      type: "main",
+    };
+
+    const newLine = getLine(endPoint, newEndPoint, "main");
+    const newA = test(endPoint, newEndPoint);
+
+    const newNewPoints = createMiddlePointsForSteps(
+      endPoint,
+      newEndPoint,
+      initialElevation * -1,
+      granularitySteps,
+    );
+
+    const newNewLines = createLines(newNewPoints);
+
+    const mp = mergePoints(newPoints, newNewPoints);
+    const mpLine = getLine(mp[0], mp[mp.length - 1], "main");
+    // const mpp = createMiddlePointsForSteps(mp[0], mp[1], 0.3, granularitySteps);
+    const mpl = createLines(mp);
+
+    console.log("Calculation time (ms):", Date.now() - s);
+    console.log(mp);
+
+    // setPoints([a, ...newPoints, newA, ...newNewPoints]);
+    // setLines([line, ...newLines, newLine, ...newNewLines, mpLine, ...mpl]);
+    setPoints([a, newA, ...mp]);
+    setLines([line, newLine, ...mpl]);
 
     return () => {
       setPoints([]);
       setLines([]);
     };
   }, []);
+
+  // start and end points are assumed to share a single point at their end
+  // returns a new array BUT MODIFIES THE UNDERLYING POINTS
+  function mergePoints(startPoints: Point[], endPoints: Point[]): Point[] {
+    const startSplitIndex = Math.floor(startPoints.length / 2);
+    const endSplitIndex = Math.floor(endPoints.length / 2);
+
+    const mergeStart = startPoints[startSplitIndex];
+    const mergeEnd = endPoints[endSplitIndex];
+
+    const targetCurve = createMiddlePointsForSteps(
+      mergeStart,
+      mergeEnd,
+      0.3,
+      granularitySteps,
+    );
+    const pointsToMove = [
+      ...startPoints.slice(startSplitIndex),
+      ...endPoints.slice(1, endSplitIndex + 1),
+    ];
+
+    const maxMoveIndex = Math.floor(pointsToMove.length / 2);
+
+    for (let i = 0; i < pointsToMove.length; i++) {
+      const initialMoveRatio = 1 - Math.abs(maxMoveIndex - i) / maxMoveIndex;
+      const moveRatio = Math.min(
+        initialMoveRatio + initialMoveRatio * 0.25 * initialMoveRatio,
+        1,
+      );
+
+      const from = pointsToMove[i];
+      const to = targetCurve[i];
+
+      const dist = getDistanceBetweenPoints(from, to);
+      const targetDist = dist * moveRatio;
+      if (targetDist === 0) {
+        continue;
+      }
+
+      const sinLeft = (to.left - from.left) / dist;
+      const cosTop = (to.top - from.top) / dist;
+
+      const targetTop = targetDist * cosTop + from.top;
+      const targetLeft = targetDist * sinLeft + from.left;
+
+      from.top = targetTop;
+      from.left = targetLeft;
+    }
+
+    return [
+      ...startPoints.slice(0, startSplitIndex),
+      ...pointsToMove,
+      ...endPoints.slice(endSplitIndex + 1),
+    ];
+  }
+
+  function getDistanceBetweenPoints(from: Point, to: Point): number {
+    return Math.sqrt(
+      Math.pow(to.top - from.top, 2) + Math.pow(to.left - from.left, 2),
+    );
+  }
 
   function getLine(from: Point, to: Point, type: "main" | "middle"): Line {
     // calculation of the distance between two points
