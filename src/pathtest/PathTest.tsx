@@ -16,31 +16,14 @@ type Line = {
 
 const pointSize = 16;
 const lineSize = 8;
-const initialMiddleElevation = 100;
+const initialElevation = 0.25;
+const granularitySteps = 4;
 
 export default function PathTest() {
   const [lines, setLines] = useState<Line[]>([]);
   const [points, setPoints] = useState<Point[]>([]);
 
   useEffect(() => {
-    // const points: Point[] = [
-    //   {
-    //     top: 200,
-    //     left: 100,
-    //     type: "main",
-    //   },
-    //   {
-    //     top: 300,
-    //     left: 300,
-    //     type: "main",
-    //   },
-    //   {
-    //     top: 100,
-    //     left: 250,
-    //     type: "middle",
-    //   },
-    // ];
-
     const startPoint: Point = {
       top: 200,
       left: 100,
@@ -56,48 +39,17 @@ export default function PathTest() {
     const line = getLine(startPoint, endPoint, "main");
     const a = test(startPoint, endPoint);
 
-    const newPoints = createPointsForSteps(startPoint, endPoint, 0.3, 4);
+    const newPoints = createMiddlePointsForSteps(
+      startPoint,
+      endPoint,
+      initialElevation,
+      granularitySteps,
+    );
+
     const newLines = createLines(newPoints);
 
-    console.log(newPoints, newLines);
-
-    // const middlePoint = getInitialMiddle(points[0], points[1], 0.25);
-    // const toMiddleLine = getLine(points[0], middlePoint, "middle");
-    // const fromMiddleLine = getLine(middlePoint, points[1], "middle");
-
-    // const quarterPoint1 = getInitialMiddle(points[0], middlePoint, 0.125);
-    // const toQuarterLine1 = getLine(points[0], quarterPoint1, "middle");
-    // const fromQuarterLine1 = getLine(quarterPoint1, middlePoint, "middle");
-
-    // const quarterPoint2 = getInitialMiddle(middlePoint, points[1], 0.125);
-    // const toQuarterLine2 = getLine(middlePoint, quarterPoint2, "middle");
-    // const fromQuarterLine2 = getLine(quarterPoint2, points[1], "middle");
-
-    // const topPoint = getInitialMiddle(quarterPoint1, quarterPoint2, 0.125);
-    // const toTopLine = getLine(quarterPoint1, topPoint, "middle");
-    // const fromTopLine = getLine(topPoint, quarterPoint2, "middle");
-
-    setPoints([
-      //   ...points,
-      a,
-      ...newPoints,
-      //   middlePoint,
-      //   quarterPoint1,
-      //   quarterPoint2,
-      //   topPoint,
-    ]);
-    setLines([
-      line,
-      ...newLines,
-      //   toMiddleLine,
-      //   fromMiddleLine,
-      //   toQuarterLine1,
-      //   fromQuarterLine1,
-      //   toQuarterLine2,
-      //   fromQuarterLine2,
-      //   toTopLine,
-      //   fromTopLine,
-    ]);
+    setPoints([a, ...newPoints]);
+    setLines([line, ...newLines]);
 
     return () => {
       setPoints([]);
@@ -106,26 +58,30 @@ export default function PathTest() {
   }, []);
 
   function getLine(from: Point, to: Point, type: "main" | "middle"): Line {
-    // calculation of a distance between two points + accounting for the line thickness
-    const length =
-      Math.sqrt(
-        Math.pow(to.top - from.top, 2) + Math.pow(to.left - from.left, 2),
-      ) + lineSize;
+    // calculation of the distance between two points
 
-    // calculation of the degree of the line connecting two points relative to positive X axis
+    const length = Math.sqrt(
+      Math.pow(to.top - from.top, 2) + Math.pow(to.left - from.left, 2),
+    );
+
+    // calculation of the degree of the line connecting two points (relative to positive X axis line)
+
     const radians = Math.atan((to.top - from.top) / (to.left - from.left));
 
-    // calculation of the line's origin. making sure that the point order doesn't matter and also accounting for the thickness
-    let top = lineSize / -2;
-    let left = lineSize / -2;
+    // calculation of the line's origin. making sure that the location order of points doesn't matter
+
+    let top;
+    let left;
 
     if (from.left <= to.left) {
-      top += from.top;
-      left += from.left;
+      top = from.top;
+      left = from.left;
     } else {
-      top += to.top;
-      left += to.left;
+      top = to.top;
+      left = to.left;
     }
+
+    // collecting and returning the stuff
 
     const line = {
       top: top,
@@ -138,32 +94,31 @@ export default function PathTest() {
     return line;
   }
 
-  function getInitialMiddle(
+  function getMiddlePoint(
     from: Point,
     to: Point,
     elevationPercentage: number,
   ): Point {
-    const radians = Math.atan((to.top - from.top) / (to.left - from.left));
+    // same stuff with the line above
 
+    const radians = Math.atan((to.top - from.top) / (to.left - from.left));
     const length = Math.sqrt(
       Math.pow(to.top - from.top, 2) + Math.pow(to.left - from.left, 2),
     );
 
-    // getting the point coordinates assuming that the rotation is 0deg
+    // getting the initial point coordinates assuming that the rotation is 0deg
 
-    // const baseTop = from.top - initialMiddleElevation;
-    // const baseTop = from.top - length / 4;
     const baseTop = from.top - length * elevationPercentage;
     const baseLeft = from.left + length / 2;
 
-    // to rotate, offsetting the point so that the origin becomes 0, 0
+    // then to rotate, offsetting the point so that the origin becomes 0, 0
 
     const topUntilOrigin = from.top;
     const leftUntilOrigin = from.left;
     const topWithOrigin = baseTop - topUntilOrigin;
     const leftWithOrigin = baseLeft - leftUntilOrigin;
 
-    // once the origin is 0, 0, this calculates the new rotated coordinates
+    // once the origin is 0, 0, calculate the new rotated coordinates
 
     const originRotatedTop =
       leftWithOrigin * Math.sin(radians) + topWithOrigin * Math.cos(radians);
@@ -175,10 +130,10 @@ export default function PathTest() {
     const rotatedTop = originRotatedTop + topUntilOrigin;
     const rotatedLeft = originRotatedLeft + leftUntilOrigin;
 
+    // if the rotation is more than 180, then there is a need to mirror the point
+
     let resultTop = rotatedTop;
     let resultLeft = rotatedLeft;
-
-    // if the rotation is more than 180, then there is a need to mirror the point
 
     if (to.left < from.left) {
       const topDiff = resultTop - from.top;
@@ -187,6 +142,8 @@ export default function PathTest() {
       resultTop -= topDiff * 2;
       resultLeft -= leftDiff * 2;
     }
+
+    // return the stuff
 
     const point: Point = {
       top: resultTop,
@@ -204,15 +161,13 @@ export default function PathTest() {
     const point: Point = {
       top: middleTop,
       left: middleLeft,
-      //   top: baseTop,
-      //   left: baseLeft,
       type: "middle",
     };
 
     return point;
   }
 
-  function createPointsForSteps(
+  function createMiddlePointsForSteps(
     initialStart: Point,
     initialEnd: Point,
     initialElevation: number,
@@ -221,18 +176,21 @@ export default function PathTest() {
     let currPoints = [initialStart, initialEnd];
 
     for (let i = 0; i < steps; i++) {
-      currPoints = createPoints(currPoints, initialElevation);
+      currPoints = createMiddlePoints(currPoints, initialElevation);
       initialElevation /= 2;
     }
 
     return currPoints;
   }
 
-  function createPoints(points: Point[], elevationPercentage: number): Point[] {
+  function createMiddlePoints(
+    points: Point[],
+    elevationPercentage: number,
+  ): Point[] {
     const newPoints = [points[0]];
 
     for (let i = 0; i < points.length - 1; i++) {
-      const newPoint = getInitialMiddle(
+      const newPoint = getMiddlePoint(
         points[i],
         points[i + 1],
         elevationPercentage,
@@ -299,9 +257,9 @@ export default function PathTest() {
           key={Math.random()}
           className={"  rounded-full absolute " + color}
           style={{
-            top: l.top,
-            left: l.left,
-            width: l.length,
+            top: l.top - lineSize / 2,
+            left: l.left - lineSize / 2,
+            width: l.length + lineSize,
             height: lineSize,
             transform: `rotate(${l.radians}rad)`,
             transformOrigin: `${lineSize / 2}px ${lineSize / 2}px`,
