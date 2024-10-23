@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { sleep } from "../utils";
 
 type Point = {
   top: number;
@@ -17,24 +18,25 @@ type Line = {
 const pointSize = 16;
 const lineSize = 8;
 const initialElevation = 0.25;
-const granularitySteps = 4;
+const granularitySteps = 8;
 
 export default function PathTest() {
   const [lines, setLines] = useState<Line[]>([]);
   const [points, setPoints] = useState<Point[]>([]);
+  const movable = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const s = Date.now();
 
     const startPoint: Point = {
-      top: 200,
+      top: 100,
       left: 100,
       type: "main",
     };
 
     const endPoint: Point = {
-      top: 300,
-      left: 300,
+      top: 200,
+      left: 200,
       type: "main",
     };
 
@@ -52,7 +54,7 @@ export default function PathTest() {
 
     const newEndPoint: Point = {
       top: 300,
-      left: 100,
+      left: 200,
       type: "main",
     };
 
@@ -81,17 +83,60 @@ export default function PathTest() {
     setPoints([a, newA, ...mp]);
     setLines([line, newLine, ...mpl]);
 
+    const cancelAnimation = runAnimation(mp);
+
     return () => {
       setPoints([]);
       setLines([]);
+      cancelAnimation();
     };
   }, []);
+
+  function runAnimation(points: Point[]) {
+    let stop = false;
+
+    new Promise(async () => {
+      for (let i = 0; i < points.length; i++) {
+        if (stop) {
+          movable.current!.style.top = "";
+          movable.current!.style.left = "";
+          break;
+        }
+
+        movable.current!.style.top = points[i].top + "px";
+        movable.current!.style.left = points[i].left + "px";
+        await sleep(16);
+      }
+    });
+
+    return () => {
+      stop = true;
+    };
+  }
 
   // start and end points are assumed to share a single point at their end
   // returns a new array BUT MODIFIES THE UNDERLYING POINTS
   function mergePoints(startPoints: Point[], endPoints: Point[]): Point[] {
-    const startSplitIndex = Math.floor(startPoints.length / 2);
-    const endSplitIndex = Math.floor(endPoints.length / 2);
+    const a = startPoints[0];
+    const b = startPoints[startPoints.length - 1];
+    const c = endPoints[endPoints.length - 1];
+    const rad =
+      Math.atan2(c.top - b.top, c.left - b.left) -
+      Math.atan2(a.top - b.top, a.left - b.left);
+    const deg = (rad * 180) / Math.PI;
+    const relativeDegree = deg < 0 ? deg + 360 : deg;
+
+    const elevation = relativeDegree > 180 ? 0.3 : -0.3;
+    const smoothRatio = Math.abs(1 - Math.abs(90 - relativeDegree) / 90);
+    const somin = 0.001;
+    const somax = 0.9;
+    const smoothOffset = somin + smoothRatio * (somax - somin);
+    console.log(relativeDegree, smoothRatio, smoothOffset);
+
+    const startSplitIndex = Math.floor(
+      startPoints.length - startPoints.length * smoothOffset,
+    );
+    const endSplitIndex = Math.floor(endPoints.length * smoothOffset);
 
     const mergeStart = startPoints[startSplitIndex];
     const mergeEnd = endPoints[endSplitIndex];
@@ -99,7 +144,7 @@ export default function PathTest() {
     const targetCurve = createMiddlePointsForSteps(
       mergeStart,
       mergeEnd,
-      0.3,
+      elevation,
       granularitySteps,
     );
     const pointsToMove = [
@@ -107,17 +152,28 @@ export default function PathTest() {
       ...endPoints.slice(1, endSplitIndex + 1),
     ];
 
+    const lenRatio = targetCurve.length / pointsToMove.length;
+
     const maxMoveIndex = Math.floor(pointsToMove.length / 2);
 
     for (let i = 0; i < pointsToMove.length; i++) {
+      const targetIndex = Math.floor(lenRatio * i);
+
       const initialMoveRatio = 1 - Math.abs(maxMoveIndex - i) / maxMoveIndex;
+      //   const moveRatio = Math.min(
+      //     initialMoveRatio +
+      //       initialMoveRatio * (1 - smoothOffset) * initialMoveRatio,
+      //     1,
+      //   );
+      //   const moveRatio = initialMoveRatio;
       const moveRatio = Math.min(
         initialMoveRatio + initialMoveRatio * 0.25 * initialMoveRatio,
         1,
       );
 
       const from = pointsToMove[i];
-      const to = targetCurve[i];
+      const to = targetCurve[targetIndex];
+      //   const to = findClosestPoint(from, targetCurve);
 
       const dist = getDistanceBetweenPoints(from, to);
       const targetDist = dist * moveRatio;
@@ -142,6 +198,19 @@ export default function PathTest() {
     ];
   }
 
+  function findClosestPoint(point: Point, pool: Point[]): Point {
+    let mindist = getDistanceBetweenPoints(point, pool[0]);
+    let mini = 0;
+    for (let i = 1; i < pool.length; i++) {
+      const dist = getDistanceBetweenPoints(point, pool[i]);
+      if (mindist > dist) {
+        mindist = dist;
+        mini = i;
+      }
+    }
+    return pool[mini];
+  }
+
   function getDistanceBetweenPoints(from: Point, to: Point): number {
     return Math.sqrt(
       Math.pow(to.top - from.top, 2) + Math.pow(to.left - from.left, 2),
@@ -149,7 +218,7 @@ export default function PathTest() {
   }
 
   function getLine(from: Point, to: Point, type: "main" | "middle"): Line {
-    // calculation of the distance between two points
+    // calculation of distance between two points
 
     const length = Math.sqrt(
       Math.pow(to.top - from.top, 2) + Math.pow(to.left - from.left, 2),
@@ -190,7 +259,7 @@ export default function PathTest() {
     to: Point,
     elevationPercentage: number,
   ): Point {
-    // same stuff with the line above
+    // same stuff with the line creation above
 
     const radians = Math.atan((to.top - from.top) / (to.left - from.left));
     const length = Math.sqrt(
@@ -363,6 +432,11 @@ export default function PathTest() {
   return (
     <div className="h-dvh flex">
       <div className="bg-gray-500 size-[900px] m-auto relative">
+        <div
+          ref={movable}
+          className="size-1 rounded-full bg-black z-50 absolute translate-x-[-2px] translate-y-[-2px]"
+          style={{ boxShadow: "0 0 25px 25px hsla(244, 50%, 50%, 0.75)" }}
+        />
         {renderPoints()}
         {renderLines()}
       </div>
