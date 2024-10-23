@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { sleep } from "../utils";
 import { gsap } from "gsap";
+import { useGSAP } from "@gsap/react";
 
 type Point = {
   top: number;
@@ -16,12 +16,17 @@ type Line = {
   type: "main" | "middle";
 };
 
-const pointSize = 16;
-const lineSize = 8;
+type Path = {
+  points: Point[];
+  speed: number;
+};
+
+const pointSize = 8;
+const lineSize = 4;
 const initialElevation = 0.25;
 const granularitySteps = 5;
 
-export default function PathTest() {
+export default function PathTest2() {
   const [lines, setLines] = useState<Line[]>([]);
   const [points, setPoints] = useState<Point[]>([]);
   const movable = useRef<HTMLDivElement>(null);
@@ -29,62 +34,16 @@ export default function PathTest() {
   useEffect(() => {
     const s = Date.now();
 
-    const startPoint: Point = {
-      top: 100,
-      left: 100,
-      type: "main",
-    };
+    const path = generatePath(128, 4, 0.1, 25.5);
+    const pathLines = createLines(path.points);
 
-    const endPoint: Point = {
-      top: 200,
-      left: 200,
-      type: "main",
-    };
-
-    const line = getLine(startPoint, endPoint, "main");
-    const a = test(startPoint, endPoint);
-
-    const newPoints = createMiddlePointsForSteps(
-      startPoint,
-      endPoint,
-      initialElevation,
-      granularitySteps,
-    );
-
-    const newLines = createLines(newPoints);
-
-    const newEndPoint: Point = {
-      top: 300,
-      left: 200,
-      type: "main",
-    };
-
-    const newLine = getLine(endPoint, newEndPoint, "main");
-    const newA = test(endPoint, newEndPoint);
-
-    const newNewPoints = createMiddlePointsForSteps(
-      endPoint,
-      newEndPoint,
-      initialElevation * -1,
-      granularitySteps,
-    );
-
-    const newNewLines = createLines(newNewPoints);
-
-    const mp = mergePoints(newPoints, newNewPoints);
-    const mpLine = getLine(mp[0], mp[mp.length - 1], "main");
-    // const mpp = createMiddlePointsForSteps(mp[0], mp[1], 0.3, granularitySteps);
-    const mpl = createLines(mp);
-
+    console.log(path);
     console.log("Calculation time (ms):", Date.now() - s);
-    console.log(mp);
 
-    // setPoints([a, ...newPoints, newA, ...newNewPoints]);
-    // setLines([line, ...newLines, newLine, ...newNewLines, mpLine, ...mpl]);
-    setPoints([a, newA, ...mp]);
-    setLines([line, newLine, ...mpl]);
+    setPoints([...path.points]);
+    setLines([...pathLines]);
 
-    const cancelAnimation = runAnimation(mp);
+    const cancelAnimation = runAnimation(path);
 
     return () => {
       setPoints([]);
@@ -93,131 +52,81 @@ export default function PathTest() {
     };
   }, []);
 
-  function runAnimation(points: Point[]) {
-    const tl = gsap.timeline({ defaults: { duration: 0.1, ease: "none" } });
-    tl.set(movable.current!, { top: points[0].top, left: points[0].left });
+  function runAnimation(path: Path) {
+    let tl: gsap.core.Timeline | null = gsap.timeline({
+      paused: true,
+      defaults: { duration: path.speed, ease: "none" },
+    });
+    tl.set(movable.current!, {
+      top: path.points[0].top,
+      left: path.points[0].left,
+    });
 
-    for (let i = 1; i < points.length; i++) {
-      tl.to(movable.current!, { top: points[i].top, left: points[i].left });
+    for (let i = 1; i < path.points.length; i++) {
+      tl.to(movable.current!, {
+        top: path.points[i].top,
+        left: path.points[i].left,
+      });
     }
 
-    // let stop = false;
-
-    // new Promise(async () => {
-    //   for (let i = 0; i < points.length; i++) {
-    //     if (stop) {
-    //       movable.current!.style.top = "";
-    //       movable.current!.style.left = "";
-    //       break;
-    //     }
-
-    //     movable.current!.style.top = points[i].top + "px";
-    //     movable.current!.style.left = points[i].left + "px";
-    //     await sleep(16);
-    //   }
-    // });
+    tl.play();
 
     return () => {
-      tl.revert();
-      tl.kill();
+      tl?.kill();
+      tl = null;
     };
   }
 
-  // start and end points are assumed to share a single point at their end
-  // returns a new array BUT MODIFIES THE UNDERLYING POINTS
-  function mergePoints(startPoints: Point[], endPoints: Point[]): Point[] {
-    const a = startPoints[0];
-    const b = startPoints[startPoints.length - 1];
-    const c = endPoints[endPoints.length - 1];
+  function generatePath(
+    pointAmount: number,
+    pointDistance: number,
+    speed: number,
+    allowedDegrees: number,
+  ): Path {
+    const points: Point[] = [
+      {
+        top: 250,
+        left: 450,
+        type: "main",
+      },
+    ];
+
+    let prevDegree = Math.floor(Math.random() * 360);
+    const initialRadians = (prevDegree * Math.PI) / 180;
+    points.push(getLineEnd(points[0], pointDistance, initialRadians));
+    points[1].type = "main";
+
+    for (let i = 2; i < pointAmount; i++) {
+      const allowedStart = prevDegree + (180 - allowedDegrees / 2) - 180;
+      const allowedEnd = allowedStart + allowedDegrees;
+
+      prevDegree =
+        allowedStart + Math.floor(Math.random() * (allowedEnd - allowedStart));
+      const radians = (prevDegree * Math.PI) / 180;
+      points.push(getLineEnd(points[i - 1], pointDistance, radians));
+    }
+
+    return {
+      points: points,
+      speed: speed,
+    };
+  }
+
+  function getRelativeDegree(a: Point, b: Point, c: Point) {
     const rad =
       Math.atan2(c.top - b.top, c.left - b.left) -
       Math.atan2(a.top - b.top, a.left - b.left);
     const deg = (rad * 180) / Math.PI;
     const relativeDegree = deg < 0 ? deg + 360 : deg;
-
-    const elevation = relativeDegree > 180 ? 0.3 : -0.3;
-    const smoothRatio = Math.abs(1 - Math.abs(90 - relativeDegree) / 90);
-    const somin = 0.001;
-    const somax = 0.9;
-    const smoothOffset = somin + smoothRatio * (somax - somin);
-    console.log(relativeDegree, smoothRatio, smoothOffset);
-
-    const startSplitIndex = Math.floor(
-      startPoints.length - startPoints.length * smoothOffset,
-    );
-    const endSplitIndex = Math.floor(endPoints.length * smoothOffset);
-
-    const mergeStart = startPoints[startSplitIndex];
-    const mergeEnd = endPoints[endSplitIndex];
-
-    const targetCurve = createMiddlePointsForSteps(
-      mergeStart,
-      mergeEnd,
-      elevation,
-      granularitySteps,
-    );
-    const pointsToMove = [
-      ...startPoints.slice(startSplitIndex),
-      ...endPoints.slice(1, endSplitIndex + 1),
-    ];
-
-    const lenRatio = targetCurve.length / pointsToMove.length;
-
-    const maxMoveIndex = Math.floor(pointsToMove.length / 2);
-
-    for (let i = 0; i < pointsToMove.length; i++) {
-      const targetIndex = Math.floor(lenRatio * i);
-
-      const initialMoveRatio = 1 - Math.abs(maxMoveIndex - i) / maxMoveIndex;
-      //   const moveRatio = Math.min(
-      //     initialMoveRatio +
-      //       initialMoveRatio * (1 - smoothOffset) * initialMoveRatio,
-      //     1,
-      //   );
-      //   const moveRatio = initialMoveRatio;
-      const moveRatio = Math.min(
-        initialMoveRatio + initialMoveRatio * 0.25 * initialMoveRatio,
-        1,
-      );
-
-      const from = pointsToMove[i];
-      const to = targetCurve[targetIndex];
-      //   const to = findClosestPoint(from, targetCurve);
-
-      const dist = getDistanceBetweenPoints(from, to);
-      const targetDist = dist * moveRatio;
-      if (targetDist === 0) {
-        continue;
-      }
-
-      const sinLeft = (to.left - from.left) / dist;
-      const cosTop = (to.top - from.top) / dist;
-
-      const targetTop = targetDist * cosTop + from.top;
-      const targetLeft = targetDist * sinLeft + from.left;
-
-      from.top = targetTop;
-      from.left = targetLeft;
-    }
-
-    return [
-      ...startPoints.slice(0, startSplitIndex),
-      ...pointsToMove,
-      ...endPoints.slice(endSplitIndex + 1),
-    ];
+    return relativeDegree;
   }
 
-  function findClosestPoint(point: Point, pool: Point[]): Point {
-    let mindist = getDistanceBetweenPoints(point, pool[0]);
-    let mini = 0;
-    for (let i = 1; i < pool.length; i++) {
-      const dist = getDistanceBetweenPoints(point, pool[i]);
-      if (mindist > dist) {
-        mindist = dist;
-        mini = i;
-      }
-    }
-    return pool[mini];
+  function getLineEnd(start: Point, length: number, radians: number): Point {
+    return {
+      top: length * Math.cos(radians) + start.top,
+      left: length * Math.sin(radians) + start.left,
+      type: "middle",
+    };
   }
 
   function getDistanceBetweenPoints(from: Point, to: Point): number {
@@ -334,41 +243,6 @@ export default function PathTest() {
     };
 
     return point;
-  }
-
-  function createMiddlePointsForSteps(
-    initialStart: Point,
-    initialEnd: Point,
-    initialElevation: number,
-    steps: number,
-  ): Point[] {
-    let currPoints = [initialStart, initialEnd];
-
-    for (let i = 0; i < steps; i++) {
-      currPoints = createMiddlePoints(currPoints, initialElevation);
-      initialElevation /= 2;
-    }
-
-    return currPoints;
-  }
-
-  function createMiddlePoints(
-    points: Point[],
-    elevationPercentage: number,
-  ): Point[] {
-    const newPoints = [points[0]];
-
-    for (let i = 0; i < points.length - 1; i++) {
-      const newPoint = getMiddlePoint(
-        points[i],
-        points[i + 1],
-        elevationPercentage,
-      );
-
-      newPoints.push(newPoint, points[i + 1]);
-    }
-
-    return newPoints;
   }
 
   function createLines(points: Point[]): Line[] {

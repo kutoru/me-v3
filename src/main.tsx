@@ -7,6 +7,7 @@ import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import PathTest from "./pathtest/PathTest.tsx";
+import PathTest2 from "./PathTest2.tsx";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -18,6 +19,10 @@ const router = createBrowserRouter([
   {
     path: "/path-test",
     element: <PathTest />,
+  },
+  {
+    path: "/path-test2",
+    element: <PathTest2 />,
   },
 ]);
 
