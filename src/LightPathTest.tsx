@@ -32,14 +32,15 @@ type LightState = {
 
 const PATH_POINT_DISTANCE = 8; // px
 const ALLOWED_TURN_RANGE = 22.5; // deg
-const MIN_SIZE = 25; // px
+const MIN_SIZE = 10; // px
 const MAX_SIZE = 30; // px
 const MIN_TRANS_DUR = 3000; // ms
 const MAX_TRANS_DUR = 4000; // ms
-const MIN_NEXT_CD = 500; // ms
-const MAX_NEXT_CD = 1000; // ms
+const MIN_TIME_UNTIL_NEXT = 2500; // ms
+const MAX_TIME_UNTIL_NEXT = 2500; // ms
 const MIN_PATH_POINTS = 2; // count
 const MAX_PATH_POINTS = 50; // count
+
 const COLORS = {
   //   default: "hsl(343,88%,16%)",
   //   default: "hsl(244,47%,20%)",
@@ -59,22 +60,23 @@ export default function LightPathTest() {
   const mainContainer = useRef<HTMLDivElement>(null);
 
   const [lights, setLights] = useState<LightState[]>([]);
-  const [nextLightAt, setNextLightAt] = useState(0);
+  const [generateNextLightAt, setGenerateNextLightAt] = useState(0);
 
+  // activating lights
   useEffect(() => {
-    // const s = Date.now();
+    console.log(lights);
+    const now = Date.now();
+    if (generateNextLightAt <= now) {
+      generateLight();
+      return;
+    }
 
-    const light = generateLight();
-    console.log(light);
-    light.opacityTimeline?.play();
-    light.movementTimeline?.play();
+    const timeoutId = setTimeout(() => {
+      setGenerateNextLightAt(0);
+    }, generateNextLightAt - now);
 
-    return () => {
-      setPoints([]);
-      setLines([]);
-      light.element.remove();
-    };
-  }, []);
+    return () => clearTimeout(timeoutId);
+  }, [lights, generateNextLightAt]);
 
   function generateLight() {
     if (!mainContainer.current) {
@@ -86,7 +88,16 @@ export default function LightPathTest() {
     const { width: maxLeft, height: maxTop } =
       mainContainer.current.getBoundingClientRect();
 
-    const size = Math.floor(MIN_SIZE + Math.random() * (MAX_SIZE - MIN_SIZE));
+    const startingPoint: Point = {
+      top: Math.floor(Math.random() * maxTop),
+      left: Math.floor(Math.random() * maxLeft),
+      type: "main",
+    };
+
+    const glowSize = Math.floor(
+      MIN_SIZE + Math.random() * (MAX_SIZE - MIN_SIZE),
+    );
+    const containerSize = glowSize * 3;
     const appearDuration = Math.floor(
       MIN_TRANS_DUR + Math.random() * (MAX_TRANS_DUR - MIN_TRANS_DUR),
     );
@@ -97,31 +108,23 @@ export default function LightPathTest() {
       MIN_PATH_POINTS + Math.random() * (MAX_PATH_POINTS - MIN_PATH_POINTS),
     );
 
-    const startingPoint: Point = {
-      top: Math.floor(Math.random() * maxTop),
-      left: Math.floor(Math.random() * maxLeft),
-      type: "main",
-    };
+    // element initialization
 
-    // element loading
-
-    const lightContainer = document.createElement("div");
-    const light = document.createElement("div");
+    const { lightContainer, light, lightIndex } = loadLightElement();
 
     lightContainer.className = "rounded-full z-0 opacity-0 absolute flex";
-    lightContainer.style.transform = `translate(-${size}px, -${size}px)`;
-    //   lightContainer.style.backgroundColor = "rgba(0,0,0,1.0)";
+    // lightContainer.style.backgroundColor = "rgba(0,0,0,1.0)";
+    lightContainer.style.transform = `translate(-${containerSize / 2}px, -${
+      containerSize / 2
+    }px)`;
+    lightContainer.style.width = containerSize + "px";
+    lightContainer.style.height = containerSize + "px";
+
     light.className = "size-0 rounded-full m-auto";
     light.style.transition = `box-shadow 150ms ease-in-out`;
+    light.style.boxShadow = `0 0 ${glowSize}px ${glowSize}px ${COLORS.default}`;
 
-    lightContainer.append(light);
-    mainContainer.current!.prepend(lightContainer);
-
-    // data assignments
-
-    lightContainer.style.width = size * 2 + "px";
-    lightContainer.style.height = size * 2 + "px";
-    light.style.boxShadow = `0 0 ${size}px ${size}px ${COLORS.default}`;
+    // animation setup
 
     const travelPath = generatePath(
       startingPoint,
@@ -146,7 +149,7 @@ export default function LightPathTest() {
       disappearDuraiton,
     );
 
-    const lightState: LightState = {
+    lights[lightIndex] = {
       element: lightContainer,
       opacityTimeline: opacityTl,
       movementTimeline: movementTl,
@@ -154,25 +157,21 @@ export default function LightPathTest() {
     };
 
     opacityTl.eventCallback("onComplete", () => {
-      console.log("animation ended", lightState);
-      //   lightState.inUse = false;
-      lightState.opacityTimeline?.kill();
-      lightState.movementTimeline?.kill();
-      lightState.opacityTimeline = null;
-      lightState.movementTimeline = null;
-      console.log("after end", lightState);
+      lights[lightIndex].opacityTimeline?.kill();
+      lights[lightIndex].movementTimeline?.kill();
+      lights[lightIndex].opacityTimeline = null;
+      lights[lightIndex].movementTimeline = null;
     });
 
     // state updates
 
     const waitFor = Math.floor(
-      MIN_NEXT_CD + Math.random() * (MAX_NEXT_CD - MIN_NEXT_CD),
+      MIN_TIME_UNTIL_NEXT +
+        Math.random() * (MAX_TIME_UNTIL_NEXT - MIN_TIME_UNTIL_NEXT),
     );
 
-    // setNextLightAt(Date.now() + waitFor);
-    // setLights([...lights]);
-
-    return lightState;
+    setGenerateNextLightAt(Date.now() + waitFor);
+    setLights([...lights]);
   }
 
   function generatePath(
@@ -309,6 +308,36 @@ export default function LightPathTest() {
     };
   }
 
+  function loadLightElement() {
+    let lightContainer;
+    let light;
+    let lightIndex = -1;
+
+    // reuse an element if its idle
+
+    for (let i = 0; i < lights.length; i++) {
+      if (Date.now() > lights[i].inUseUntil) {
+        lightContainer = lights[i].element;
+        light = lightContainer.children.item(0) as HTMLDivElement;
+        lightIndex = i;
+        break;
+      }
+    }
+
+    // otherwise create a new one
+
+    if (!lightContainer || !light) {
+      lightContainer = document.createElement("div");
+      light = document.createElement("div");
+      lightIndex = lights.length;
+
+      lightContainer.append(light);
+      mainContainer.current!.prepend(lightContainer);
+    }
+
+    return { lightContainer, light, lightIndex };
+  }
+
   function setupLightAnimation(
     element: HTMLDivElement,
     path: Point[],
@@ -349,6 +378,9 @@ export default function LightPathTest() {
         left: path[i].left,
       });
     }
+
+    opacityTl.play();
+    movementTl.play();
 
     return { opacityTl, movementTl };
   }
