@@ -34,7 +34,7 @@ export default function PathTest2() {
   useEffect(() => {
     const s = Date.now();
 
-    const path = generatePath(128, 4, 0.1, 25.5);
+    const path = generatePath(100, 4, 0.1, 25.5);
     const pathLines = createLines(path.points);
 
     console.log(path);
@@ -53,6 +53,22 @@ export default function PathTest2() {
   }, []);
 
   function runAnimation(path: Path) {
+    let opacityTL: gsap.core.Timeline | null = gsap.timeline({
+      paused: true,
+      defaults: { duration: 5 },
+    });
+
+    opacityTL.set(movable.current!, {
+      opacity: 0,
+    });
+    opacityTL.to(movable.current!, {
+      opacity: 1,
+    });
+    opacityTL.to(movable.current!, {
+      delay: 3,
+      opacity: 0,
+    });
+
     let tl: gsap.core.Timeline | null = gsap.timeline({
       paused: true,
       defaults: { duration: path.speed, ease: "none" },
@@ -70,8 +86,11 @@ export default function PathTest2() {
     }
 
     tl.play();
+    opacityTL.play();
 
     return () => {
+      opacityTL?.kill();
+      opacityTL = null;
       tl?.kill();
       tl = null;
     };
@@ -318,7 +337,7 @@ export default function PathTest2() {
         <div
           ref={movable}
           className="size-1 rounded-full bg-black z-50 absolute translate-x-[-2px] translate-y-[-2px]"
-          style={{ boxShadow: "0 0 25px 25px hsla(244, 50%, 50%, 0.75)" }}
+          style={{ boxShadow: "0 0 25px 25px hsla(244, 100%, 50%, 1)" }}
         />
         {renderPoints()}
         {renderLines()}
