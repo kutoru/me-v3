@@ -1,200 +1,151 @@
 import { useEffect, useState } from "react";
+import { getRandomInRange } from "../utils";
+import { gsap } from "gsap";
 
-const minSize = 25;
-const maxSize = 150;
-const minTransitionTime = 3000;
-const maxTransitionTime = 4000;
-const minSleep = 500;
-const maxSleep = 1000;
-const colors = {
-  //   default: "hsl(343,88%,16%)",
-  //   default: "hsl(244,47%,20%)",
-  //   hover: "hsl(244,47%,40%)",
-  //   hold: "hsl(244,47%,60%)",
+type Point = {
+  top: number;
+  left: number;
+};
+
+type Boundary = {
+  top: number;
+  right: number;
+  left: number;
+  bottom: number;
+};
+
+type BoundaryHitType = "top" | "bottom" | "left" | "right" | "corner" | "none";
+
+type LightState = {
+  element: HTMLDivElement;
+  inUseUntil: number;
+  opacityTimeline: gsap.core.Timeline | null;
+  movementTimeline: gsap.core.Timeline | null;
+};
+
+const PATH_POINT_DISTANCE = 8; // px
+const ALLOWED_TURN_RANGE = 22.5; // deg
+const MIN_PATH_POINTS = 2; // count
+const MAX_PATH_POINTS = 100; // count
+const MIN_SIZE = 25; // px
+const MAX_SIZE = 100; // px
+const MIN_TRANS_DUR = 4000; // ms
+const MAX_TRANS_DUR = 8000; // ms
+const MIN_TIME_UNTIL_NEXT = 750; // ms
+const MAX_TIME_UNTIL_NEXT = 1500; // ms
+const COLORS = {
   default: "hsl(244,47%,40%)",
   hover: "hsl(244,47%,50%)",
   hold: "hsl(244,47%,60%)",
 };
 
-type LightState = {
-  inUse: boolean;
-  state:
-    | "beforeAppearing"
-    | "appearing"
-    | "beforeDisappearing"
-    | "disappearing";
-  nextUpdate: number;
-  appearTime: number;
-  disappearTime: number;
-  element: HTMLDivElement;
-  cancelDrag: () => void;
-};
-
 export default function useLights(
   mainContainer: React.RefObject<HTMLDivElement>,
 ) {
-  const [currMovable, setCurrMovable] = useState<{
-    element: HTMLDivElement;
-    offsetX: number;
-    offsetY: number;
-  } | null>(null);
-
   const [lights, setLights] = useState<LightState[]>([]);
-  const [nextLightAt, setNextLightAt] = useState(0);
+  const [addNextLightAt, setAddNextLightAt] = useState(0);
 
-  // drag related stuff
-  useEffect(() => {
-    mainContainer.current?.addEventListener("mousemove", onMouseMove);
-    return () => {
-      mainContainer.current?.removeEventListener("mousemove", onMouseMove);
-    };
-  }, [currMovable]);
-
-  function onMouseMove(e: MouseEvent) {
-    if (currMovable) {
-      const x = e.x + currMovable.offsetX;
-      const y = e.y + currMovable.offsetY;
-      currMovable.element.style.left = x + "px";
-      currMovable.element.style.top = y + "px";
-    }
-  }
-
-  // activating lights
+  // adding lights
   useEffect(() => {
     const now = Date.now();
-    if (nextLightAt <= now) {
+    if (addNextLightAt <= now) {
       addLight();
       return;
     }
 
     const timeoutId = setTimeout(() => {
-      setNextLightAt(0);
-    }, nextLightAt - now);
+      setAddNextLightAt(0);
+    }, addNextLightAt - now);
 
     return () => clearTimeout(timeoutId);
-  }, [lights, nextLightAt]);
-
-  // updating active lights
-  useEffect(() => {
-    const timeoutIds: number[] = [];
-
-    for (let i = 0; i < lights.length; i++) {
-      const light = lights[i];
-
-      if (!light.inUse) {
-        continue;
-      }
-
-      switch (light.state) {
-        case "beforeAppearing":
-          timeoutIds.push(beforeAppearingTimeout(light));
-          break;
-        case "appearing":
-          timeoutIds.push(appearingTimeout(light));
-          break;
-        case "beforeDisappearing":
-          timeoutIds.push(beforeDisappearingTimeout(light));
-          break;
-        case "disappearing":
-          timeoutIds.push(disappearingTimeout(light));
-          break;
-      }
-    }
-
-    return () => {
-      timeoutIds.forEach(clearTimeout);
-    };
-  }, [lights]);
-
-  function beforeAppearingTimeout(light: LightState) {
-    return setTimeout(() => {
-      light.element.classList.replace("opacity-0", "opacity-100");
-      light.state = "appearing";
-      light.nextUpdate = light.nextUpdate + light.appearTime;
-      setLights([...lights]);
-    }, light.nextUpdate - Date.now());
-  }
-
-  function appearingTimeout(light: LightState) {
-    return setTimeout(() => {
-      light.element.style.transition = `opacity ${light.disappearTime}ms ease-in-out`;
-      light.state = "beforeDisappearing";
-      light.nextUpdate = light.nextUpdate + 50;
-      setLights([...lights]);
-    }, light.nextUpdate - Date.now());
-  }
-
-  function beforeDisappearingTimeout(light: LightState) {
-    return setTimeout(() => {
-      light.element.classList.replace("opacity-100", "opacity-0");
-      light.state = "disappearing";
-      light.nextUpdate = light.nextUpdate + light.disappearTime;
-      setLights([...lights]);
-    }, light.nextUpdate - Date.now());
-  }
-
-  function disappearingTimeout(light: LightState) {
-    return setTimeout(() => {
-      light.cancelDrag();
-      light.inUse = false;
-      setLights([...lights]);
-    }, light.nextUpdate - Date.now());
-  }
+  }, [lights, addNextLightAt]);
 
   function addLight() {
     if (!mainContainer.current) {
       throw new Error("mainContainer is false");
     }
 
-    // calculations
+    // basic calculations
 
-    const { width: maxRight, height: maxBottom } =
+    const { width: maxLeft, height: maxTop } =
       mainContainer.current.getBoundingClientRect();
 
-    const size = Math.floor(minSize + Math.random() * (maxSize - minSize));
-    const appearTime = Math.floor(
-      minTransitionTime +
-        Math.random() * (maxTransitionTime - minTransitionTime),
-    );
-    const disappearTime = Math.floor(
-      minTransitionTime +
-        Math.random() * (maxTransitionTime - minTransitionTime),
-    );
-    const x = Math.floor(Math.random() * maxRight);
-    const y = Math.floor(Math.random() * maxBottom);
+    const startingPoint: Point = {
+      top: getRandomInRange(0, maxTop),
+      left: getRandomInRange(0, maxLeft),
+    };
 
-    // element loading
+    const glowSize = Math.floor(getRandomInRange(MIN_SIZE, MAX_SIZE));
+    const containerSize = glowSize * 3;
+    const appearDuration = Math.floor(
+      getRandomInRange(MIN_TRANS_DUR, MAX_TRANS_DUR),
+    );
+    const disappearDuraiton = Math.floor(
+      getRandomInRange(MIN_TRANS_DUR, MAX_TRANS_DUR),
+    );
+    const pathPoints = Math.floor(
+      getRandomInRange(MIN_PATH_POINTS, MAX_PATH_POINTS),
+    );
+
+    // element initialization
 
     const { lightContainer, light, lightIndex } = loadLightElement();
 
-    // data assignments
+    lightContainer.className = "rounded-full z-0 opacity-0 absolute flex";
+    // lightContainer.style.backgroundColor = "rgba(0,0,0,1.0)";
+    lightContainer.style.transform = `translate(-${containerSize / 2}px, -${
+      containerSize / 2
+    }px)`;
+    lightContainer.style.width = containerSize + "px";
+    lightContainer.style.height = containerSize + "px";
 
-    lightContainer.style.transition = `opacity ${appearTime}ms ease-in-out`;
-    lightContainer.style.width = size * 2 + "px";
-    lightContainer.style.height = size * 2 + "px";
-    lightContainer.style.left = x + "px";
-    lightContainer.style.top = y + "px";
-    light.style.boxShadow = `0 0 ${size}px ${size}px ${colors.default}`;
+    light.className = "size-0 rounded-full m-auto";
+    light.style.transition = `box-shadow 150ms ease-in-out`;
+    light.style.boxShadow = `0 0 ${glowSize}px ${glowSize}px ${COLORS.default}`;
 
-    const cancelDrag = setupLightMouseEvents(lightContainer, light, x, y, size);
+    // animation setup
+
+    const travelPath = generatePath(
+      startingPoint,
+      pathPoints,
+      PATH_POINT_DISTANCE,
+      ALLOWED_TURN_RANGE,
+      {
+        top: 0,
+        right: maxLeft,
+        bottom: maxTop,
+        left: 0,
+      },
+    );
+
+    const { opacityTl, movementTl } = setupLightAnimation(
+      lightContainer,
+      travelPath,
+      appearDuration,
+      disappearDuraiton,
+    );
 
     lights[lightIndex] = {
-      inUse: true,
-      state: "beforeAppearing",
-      appearTime: appearTime,
-      disappearTime: disappearTime,
-      nextUpdate: Date.now() + 50,
       element: lightContainer,
-      cancelDrag: cancelDrag,
+      opacityTimeline: opacityTl,
+      movementTimeline: movementTl,
+      inUseUntil: Date.now() + appearDuration + disappearDuraiton,
     };
+
+    opacityTl.eventCallback("onComplete", () => {
+      lights[lightIndex].opacityTimeline?.kill();
+      lights[lightIndex].movementTimeline?.kill();
+      lights[lightIndex].opacityTimeline = null;
+      lights[lightIndex].movementTimeline = null;
+    });
 
     // state updates
 
-    const waitFor = Math.floor(
-      minSleep + Math.random() * (maxSleep - minSleep),
+    const waitUntilNextLight = Math.floor(
+      getRandomInRange(MIN_TIME_UNTIL_NEXT, MAX_TIME_UNTIL_NEXT),
     );
 
-    setNextLightAt(Date.now() + waitFor);
+    setAddNextLightAt(Date.now() + waitUntilNextLight);
     setLights([...lights]);
   }
 
@@ -206,7 +157,7 @@ export default function useLights(
     // reuse an element if its idle
 
     for (let i = 0; i < lights.length; i++) {
-      if (!lights[i].inUse) {
+      if (Date.now() > lights[i].inUseUntil) {
         lightContainer = lights[i].element;
         light = lightContainer.children.item(0) as HTMLDivElement;
         lightIndex = i;
@@ -214,17 +165,12 @@ export default function useLights(
       }
     }
 
-    // otherwise create and append a new one
+    // otherwise create a new one
 
     if (!lightContainer || !light) {
       lightContainer = document.createElement("div");
       light = document.createElement("div");
       lightIndex = lights.length;
-
-      lightContainer.className = "rounded-full z-0 opacity-0 absolute flex";
-      //   lightContainer.style.backgroundColor = "rgba(0,0,0,1.0)";
-      light.className = "size-0 rounded-full m-auto";
-      light.style.transition = `box-shadow 150ms ease-in-out`;
 
       lightContainer.append(light);
       mainContainer.current!.prepend(lightContainer);
@@ -233,63 +179,188 @@ export default function useLights(
     return { lightContainer, light, lightIndex };
   }
 
-  function setupLightMouseEvents(
-    container: HTMLDivElement,
-    light: HTMLDivElement,
-    x: number,
-    y: number,
-    size: number,
+  function generatePath(
+    start: Point,
+    pointAmount: number,
+    pointDistance: number,
+    allowedDegrees: number,
+    boundary: Boundary,
   ) {
-    let holding = false;
-    let hovering = false;
+    const points = [start];
 
-    const movableInfo = {
-      element: container,
-      offsetX: 0,
-      offsetY: 0,
+    let prevDegree = Math.random() * 360;
+    const initialRadians = (prevDegree * Math.PI) / 180;
+
+    const secondPoint = getLineEndPoint(
+      points[0],
+      pointDistance,
+      initialRadians,
+    );
+    prevDegree = fixPointOutOfBoundary(
+      points[0],
+      secondPoint,
+      pointDistance,
+      prevDegree,
+      boundary,
+    );
+    points.push(secondPoint);
+
+    for (let i = 2; i < pointAmount; i++) {
+      const allowedStart = prevDegree + (180 - allowedDegrees / 2) - 180;
+      const allowedEnd = allowedStart + allowedDegrees;
+
+      prevDegree = getRandomInRange(allowedStart, allowedEnd);
+      const radians = (prevDegree * Math.PI) / 180;
+
+      const newPoint = getLineEndPoint(points[i - 1], pointDistance, radians);
+      prevDegree = fixPointOutOfBoundary(
+        points[i - 1],
+        newPoint,
+        pointDistance,
+        prevDegree,
+        boundary,
+      );
+
+      points.push(newPoint);
+    }
+
+    return points;
+  }
+
+  function getLineEndPoint(
+    start: Point,
+    length: number,
+    radians: number,
+  ): Point {
+    return {
+      top: length * Math.cos(radians) + start.top,
+      left: length * Math.sin(radians) + start.left,
     };
+  }
 
-    container.onmousedown = (e) => {
-      holding = true;
+  // if necessary, changes location of the point IN PLACE.
+  // returns the old degree, or the new one if it got changed
+  function fixPointOutOfBoundary(
+    lastPoint: Point,
+    pointToFix: Point,
+    distance: number,
+    degree: number,
+    boundary: Boundary,
+  ): number {
+    const hitType = getBoundaryHitType(pointToFix, boundary);
+    if (hitType === "none") {
+      return degree;
+    }
 
-      movableInfo.offsetX = x - e.x;
-      movableInfo.offsetY = y - e.y;
-      setCurrMovable(movableInfo);
+    let newDegree;
 
-      container.classList.replace("z-0", "z-10");
-      light.style.boxShadow = `0 0 ${size}px ${size}px ${colors.hold}`;
-    };
+    switch (hitType) {
+      case "top":
+      case "bottom":
+        newDegree = 180 - degree;
+        break;
+      case "right":
+      case "left":
+        newDegree = 360 - degree;
+        break;
+      case "corner":
+        newDegree = 180 + degree;
+        break;
+    }
 
-    container.onmouseenter = () => {
-      hovering = true;
-      if (!holding) {
-        light.style.boxShadow = `0 0 ${size}px ${size}px ${colors.hover}`;
-      }
-    };
+    const fixedPoint = getLineEndPoint(
+      lastPoint,
+      distance,
+      (newDegree * Math.PI) / 180,
+    );
 
-    container.onmouseleave = () => {
-      hovering = false;
-      if (!holding) {
-        light.style.boxShadow = `0 0 ${size}px ${size}px ${colors.default}`;
-      }
-    };
+    pointToFix.top = fixedPoint.top;
+    pointToFix.left = fixedPoint.left;
+    return newDegree;
+  }
 
-    container.onmouseup = () => {
-      if (!holding) {
-        return;
-      }
+  function getBoundaryHitType(point: Point, boundary: Boundary) {
+    let type: BoundaryHitType | undefined = undefined;
 
-      holding = false;
-      container.classList.replace("z-10", "z-0");
-      setCurrMovable(null);
+    if (point.top < boundary.top) {
+      type = "top";
+    }
 
-      if (!hovering) {
-        light.style.boxShadow = `0 0 ${size}px ${size}px ${colors.default}`;
+    if (point.top > boundary.bottom) {
+      if (type) {
+        type = "corner";
       } else {
-        light.style.boxShadow = `0 0 ${size}px ${size}px ${colors.hover}`;
+        type = "bottom";
       }
-    };
+    }
 
-    return () => container.onmouseup!({} as any);
+    if (point.left < boundary.left) {
+      if (type) {
+        type = "corner";
+      } else {
+        type = "left";
+      }
+    }
+
+    if (point.left > boundary.right) {
+      if (type) {
+        type = "corner";
+      } else {
+        type = "right";
+      }
+    }
+
+    if (!type) {
+      return "none";
+    } else {
+      return type;
+    }
+  }
+
+  function setupLightAnimation(
+    element: HTMLDivElement,
+    path: Point[],
+    appearDuration: number,
+    disappearDuraiton: number,
+  ) {
+    const opacityTl = gsap.timeline({ paused: true });
+    opacityTl.set(element, {
+      opacity: 0,
+    });
+
+    opacityTl.to(element, {
+      opacity: 1,
+      ease: "sine.out",
+      duration: appearDuration / 1000,
+    });
+    opacityTl.to(element, {
+      opacity: 0,
+      ease: "sine.in",
+      duration: disappearDuraiton / 1000,
+    });
+
+    const movementSpeed =
+      (appearDuration + disappearDuraiton) / 1000 / path.length;
+
+    const movementTl = gsap.timeline({
+      paused: true,
+      defaults: { duration: movementSpeed, ease: "none" },
+    });
+    movementTl.set(element, {
+      top: path[0].top,
+      left: path[0].left,
+    });
+
+    for (let i = 1; i < path.length; i++) {
+      movementTl.to(element, {
+        top: path[i].top,
+        left: path[i].left,
+      });
+    }
+
+    opacityTl.play();
+    movementTl.play();
+
+    return { opacityTl, movementTl };
   }
 }
