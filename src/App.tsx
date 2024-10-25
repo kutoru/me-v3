@@ -22,12 +22,12 @@ export default function App() {
 
   const introText = useRef<HTMLDivElement>(null);
   const introButtons = useRef<HTMLDivElement>(null);
-  const projectContainer = useRef<HTMLDivElement>(null);
+  const skillHint = useRef<HTMLDivElement>(null);
 
   useGSAP(() => {
     const textCleanup = animateIntroText();
     animateIntroButtons();
-    animateProjects();
+    animateSkillHint();
 
     return () => textCleanup();
   }, {});
@@ -144,31 +144,45 @@ export default function App() {
       });
     });
 
-    const tl = gsap.timeline({ repeat: -1, yoyo: true });
-    tl.to(buttonChildren[1], {
-      boxShadow: "inset 0 0 20px 0 rgba(99,102,241,0.25)",
-      duration: 2,
-      ease: "sine.inOut",
-      delay: 1,
+    const buttonOrder = [1, 2, 0];
+
+    buttonOrder.forEach((buttonIndex, i) => {
+      const tl = gsap.timeline({
+        repeat: -1,
+        delay: 1 + 5 * i,
+        repeatDelay: 10,
+        defaults: { ease: "sine.inOut", duration: 2 },
+      });
+      tl.to(buttonChildren[buttonIndex], {
+        boxShadow: "inset 0 0 20px 0 rgba(99,102,241,0.25)",
+      });
+      tl.to(buttonChildren[buttonIndex], {
+        boxShadow: "inset 0 0 20px 0 rgba(99,102,241,0)",
+      });
     });
   }
 
-  function animateProjects() {
-    const elementWidth =
-      projectContainer.current!.getBoundingClientRect().width;
-    const offsetWidth = (window.innerWidth - elementWidth) / 2 + elementWidth;
+  function animateSkillHint() {
+    const highlight = skillHint.current!.children.item(0);
+    const stConfig = {
+      trigger: skillHint.current!,
+      toggleActions: "play none none none",
+      start: "top 25%",
+    };
 
-    Array.from(projectContainer.current!.children).forEach((e, i) => {
-      gsap.from(e, {
-        scrollTrigger: {
-          trigger: e,
-          toggleActions: "restart none none reverse",
-          start: "top 75%",
-        },
-        x: i % 2 == 0 ? offsetWidth * -1 : offsetWidth,
-        ease: "power2.out",
-        duration: 2,
-      });
+    gsap.from(skillHint.current!, {
+      scrollTrigger: stConfig,
+      opacity: 0,
+      ease: "power2.out",
+      duration: 0.75,
+    });
+    gsap.from(highlight, {
+      scrollTrigger: stConfig,
+      filter: "drop-shadow(0 0 4px rgba(255,255,255,1))",
+      color: "white",
+      ease: "power2.in",
+      delay: 0.75,
+      duration: 0.5,
     });
   }
 
@@ -237,8 +251,11 @@ export default function App() {
         <div className="mx-auto w-full lg:max-w-4xl xl:max-w-6xl py-8 z-10 relative">
           <div className="text-center text-4xl">Technical skills</div>
 
-          <div className="text-center text-gray-400 mt-4 cursor-default">
-            Hint: click on a skill to see projects related to it
+          <div
+            ref={skillHint}
+            className="text-center text-gray-400 cursor-default"
+          >
+            <span>Hint:</span> click on a skill to see projects related to it
           </div>
 
           <div className="text-center mb-8">
@@ -304,7 +321,7 @@ export default function App() {
             <span className="relative z-20">My experience</span>
           </div>
 
-          <div ref={projectContainer} className="flex gap-8 flex-col">
+          <div className="flex gap-8 flex-col">
             <ProjectCard
               name="Miku Notes"
               link="miku-notes"

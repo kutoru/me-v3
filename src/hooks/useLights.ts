@@ -133,10 +133,7 @@ export default function useLights(
     };
 
     opacityTl.eventCallback("onComplete", () => {
-      lights[lightIndex].opacityTimeline?.kill();
-      lights[lightIndex].movementTimeline?.kill();
-      lights[lightIndex].opacityTimeline = null;
-      lights[lightIndex].movementTimeline = null;
+      clearAnimations(lights[lightIndex]);
     });
 
     // state updates
@@ -158,6 +155,8 @@ export default function useLights(
 
     for (let i = 0; i < lights.length; i++) {
       if (Date.now() > lights[i].inUseUntil) {
+        clearAnimations(lights[i]);
+
         lightContainer = lights[i].element;
         light = lightContainer.children.item(0) as HTMLDivElement;
         lightIndex = i;
@@ -362,5 +361,12 @@ export default function useLights(
     movementTl.play();
 
     return { opacityTl, movementTl };
+  }
+
+  function clearAnimations(lightState: LightState) {
+    lightState.opacityTimeline?.kill();
+    lightState.movementTimeline?.kill();
+    lightState.opacityTimeline = null;
+    lightState.movementTimeline = null;
   }
 }
