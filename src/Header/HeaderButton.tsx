@@ -35,10 +35,24 @@ export default function HeaderButton({
     }
   }
 
+  function getTitle() {
+    switch (icon) {
+      case "home":
+        return "Home";
+      case "github":
+        return "GitHub profile";
+      case "projects":
+        return "Projects";
+      case "profile":
+        return "About me";
+    }
+  }
+
   return (
     <a
       href={href}
       onClick={(e) => e.preventDefault()}
+      title={getTitle()}
       className={
         "group/btn block h-10 hover:bg-[#ffffff30] active:bg-[#ffffff20] transition-all p-1 rounded-md" +
         (icon ? " w-10" : " w-fit") +

@@ -10,13 +10,17 @@ const Header = forwardRef<HTMLDivElement>(({}, ref) => {
     >
       <HeaderButton icon="home" href="/" />
 
-      <SlashIcon className="fill-white size-7 my-auto" />
+      <SlashIcon className="fill-white size-7 my-auto hidden md:block" />
 
-      <HeaderButton href="/projects">Projects</HeaderButton>
+      <HeaderButton href="/projects" className="hidden md:block">
+        Projects
+      </HeaderButton>
 
-      <SlashIcon className="size-7 my-auto" />
+      <SlashIcon className="size-7 my-auto hidden md:block" />
 
-      <HeaderButton href="/projects/miku-notes">Miku Notes</HeaderButton>
+      <HeaderButton href="/projects/miku-notes" className="hidden md:block">
+        Miku Notes
+      </HeaderButton>
 
       <div className="flex-1" />
 

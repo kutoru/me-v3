@@ -2,13 +2,14 @@ import Header from "./Header/Header";
 import ExpandedSkillCard from "./Home/ExpandedSkillCard";
 import SkillCard from "./Home/SkillCard";
 import ProjectCard from "./Home/ProjectCard";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import IntroButton from "./Home/IntroButton";
 import useLights from "./hooks/useLights";
 import { useGSAP } from "@gsap/react";
 import { gsap } from "gsap";
 import diagonalLinesSvg from "./assets/diagonal-lines.svg";
 import useHeader from "./hooks/useHeader";
+import ProficiencyWindow from "./Home/ProficiencyWindow";
 
 export default function App() {
   const header = useRef<HTMLDivElement>(null);
@@ -24,6 +25,8 @@ export default function App() {
   const introButtons = useRef<HTMLDivElement>(null);
   const skillHint = useRef<HTMLDivElement>(null);
 
+  const [profWindowShown, setProfWindowShown] = useState(false);
+
   useGSAP(() => {
     const textCleanup = animateIntroText();
     animateIntroButtons();
@@ -36,6 +39,9 @@ export default function App() {
     // getting the data to work with
 
     const text = introText.current!.textContent!;
+    const fontSize = window
+      .getComputedStyle(introText.current!, null)
+      .getPropertyValue("font-size");
     const maxWidth = introText.current!.getBoundingClientRect().width;
     const parentWidth =
       introText.current!.parentElement!.getBoundingClientRect().width;
@@ -43,7 +49,7 @@ export default function App() {
     // creating a temporary span to track the width
 
     const tempSpan = document.createElement("span");
-    tempSpan.style.fontSize = "36px"; // text-4xl
+    tempSpan.style.fontSize = fontSize;
     tempSpan.style.position = "fixed";
     tempSpan.style.top = "-1000px";
     tempSpan.style.maxWidth = maxWidth + "px";
@@ -189,6 +195,10 @@ export default function App() {
   return (
     <>
       <Header ref={header} />
+      <ProficiencyWindow
+        isShown={profWindowShown}
+        setIsShown={setProfWindowShown}
+      />
 
       <div
         ref={introSection}
@@ -198,9 +208,9 @@ export default function App() {
           height: `calc(100dvh - ${headerHeight}px)`,
         }}
       >
-        <div className="flex mx-auto size-full lg:max-w-4xl xl:max-w-6xl pointer-events-none select-none">
-          <div className="flex flex-row my-auto">
-            <div className="flex-1 text-4xl border-s-4 border-indigo-500 ps-8 py-4 z-20 overflow-hidden">
+        <div className="flex mx-auto size-full lg:max-w-4xl xl:max-w-6xl cursor-default">
+          <div className="flex flex-col gap-0 md:flex-row md:gap-0 my-auto w-full">
+            <div className="border-s-2 px-4 py-2 flex-1 border-indigo-500 md:ps-8 md:pe-0 md:py-4 md:text-4xl md:border-s-4 z-20 overflow-hidden">
               <div ref={introText}>
                 Lorem ipsum dolor sit amet consectetur adipisicing elit. Dolor
                 neque iste cupiditate perferendis, necessitatibus quod quasi
@@ -216,22 +226,20 @@ export default function App() {
 
             <div
               ref={introButtons}
-              className="flex flex-col justify-evenly text-3xl gap-8 py-8 border-s-4 ms-16 ps-8 border-indigo-500 z-20 overflow-hidden"
+              className="flex flex-col justify-evenly border-s-2 p-4 pt-2 gap-4 border-indigo-500 md:border-s-4 md:ms-16 md:ps-8 md:pe-0 md:py-8 md:gap-8 z-20 overflow-hidden"
             >
               <IntroButton href="/about-me" onClick={() => {}} icon="up">
-                About my
-                <br />
+                About my <br className="hidden md:block" />
                 journey
               </IntroButton>
 
               <IntroButton href="#skills" onClick={() => {}} icon="right">
-                My technical
-                <br />
+                My technical <br className="hidden md:block" />
                 skills
               </IntroButton>
 
               <IntroButton href="#projects" onClick={() => {}} icon="down">
-                Projects I<br />
+                Projects I <br className="hidden md:block" />
                 worked on
               </IntroButton>
             </div>
@@ -259,7 +267,10 @@ export default function App() {
           </div>
 
           <div className="text-center mb-8">
-            <span className="text-indigo-400 select-none cursor-pointer hover:underline active:text-indigo-500">
+            <span
+              onClick={() => setProfWindowShown(true)}
+              className="text-indigo-400 select-none cursor-pointer hover:underline active:text-indigo-500"
+            >
               How I measure proficiency percentages
             </span>
           </div>
