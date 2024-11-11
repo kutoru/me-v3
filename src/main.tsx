@@ -1,6 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import App from "./App.tsx";
+import Home from "./Home/Home.tsx";
 import "./index.css";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
@@ -12,7 +12,7 @@ gsap.registerPlugin(useGSAP, ScrollTrigger);
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <App />,
+    element: <Home />,
   },
 ]);
 

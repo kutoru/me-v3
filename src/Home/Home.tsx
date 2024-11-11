@@ -1,19 +1,22 @@
-import Header from "./Header/Header";
-import ExpandedSkillCard from "./Home/ExpandedSkillCard";
-import SkillCard from "./Home/SkillCard";
-import ProjectCard from "./Home/ProjectCard";
+import Header from "../Header/Header";
+import ExpandedSkillCard from "./ExpandedSkillCard";
+import SkillCard from "./SkillCard";
+import ProjectCard from "./ProjectCard";
 import { useRef, useState } from "react";
-import IntroButton from "./Home/IntroButton";
-import useLights from "./hooks/useLights";
+import IntroButton from "./IntroButton";
+import useLights from "../hooks/useLights";
 import { useGSAP } from "@gsap/react";
 import { gsap } from "gsap";
-import diagonalLinesSvg from "./assets/diagonal-lines.svg";
-import useHeader from "./hooks/useHeader";
-import ProficiencyWindow from "./Home/ProficiencyWindow";
+import diagonalLinesSvg from "../assets/diagonal-lines.svg";
+import useHeader from "../hooks/useHeader";
+import ProficiencyWindow from "./ProficiencyWindow";
+import useBreakpoint from "../hooks/useBreakpoint";
 
-export default function App() {
+export default function Home() {
   const header = useRef<HTMLDivElement>(null);
   const [shown, setShown, headerHeight, freezeFor] = useHeader(header);
+
+  const screenSize = useBreakpoint();
 
   const introSection = useRef<HTMLDivElement>(null);
   useLights(introSection);
@@ -256,8 +259,10 @@ export default function App() {
           style={{ backgroundImage: `url(${diagonalLinesSvg})` }}
         />
 
-        <div className="mx-auto w-full lg:max-w-4xl xl:max-w-6xl py-8 z-10 relative">
-          <div className="text-center text-4xl">Technical skills</div>
+        <div className="mx-auto w-full lg:max-w-4xl xl:max-w-6xl pt-8 z-10 relative">
+          <div className="text-center text-3xl md:text-4xl">
+            Technical skills
+          </div>
 
           <div
             ref={skillHint}
@@ -298,11 +303,11 @@ export default function App() {
             />
           </div>
 
-          <div className="text-center text-4xl my-8">
+          <div className="text-center text-3xl md:text-4xl my-8">
             My other skills include
           </div>
 
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 gap-2 px-2 mb-2 md:grid-cols-4 md:gap-4 md:px-4 lg:px-0 md:mb-4 lg:mb-8">
             <SkillCard name="Rust" percentage={80} />
             <SkillCard name="Go" percentage={50} />
             <SkillCard name="SQL" percentage={70} />
@@ -328,8 +333,8 @@ export default function App() {
         className="bg-gradient-to-bl from-[hsla(244,47%,20%,0.33)] via-dark-900 to-[hsla(244,47%,20%,0.05)] via-25% relative overflow-hidden"
       >
         <div className="mx-auto w-full lg:max-w-4xl xl:max-w-6xl py-8">
-          <div className="relative text-center text-4xl mb-8">
-            <span className="relative z-20">My experience</span>
+          <div className="relative text-center text-3xl md:text-4xl mb-8">
+            My experience
           </div>
 
           <div className="flex gap-8 flex-col">
@@ -341,6 +346,7 @@ export default function App() {
               description="Lorem ipsum dolor sit amet consectetur adipisicing elit. Dolore eos odio optio ducimus quos placeat voluptates necessitatibus ipsum maiores sint praesentium nulla doloribus, mollitia deleniti, accusantium id voluptatem nesciunt unde culpa reprehenderit dicta nostrum blanditiis illo officiis? Repudiandae voluptas, voluptatem recusandae magnam a cupiditate voluptates! Labore similique omnis voluptatum animi."
               imgSrc="https://i.ytimg.com/vi/8DsNRWy3Q0Q/hqdefault.jpg?sqp=-oaymwEcCOADEI4CSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAcAMsuWNCNwH5vx6AdzVnU9zgOYw"
               imgOnRight={true}
+              screenSize={screenSize}
             />
             <ProjectCard
               name="Chat App"
@@ -350,6 +356,7 @@ export default function App() {
               description="Lorem ipsum dolor sit amet consectetur adipisicing elit. Dolore eos odio optio ducimus quos placeat voluptates necessitatibus ipsum maiores sint praesentium nulla doloribus, mollitia deleniti, accusantium id voluptatem nesciunt unde culpa reprehenderit dicta nostrum blanditiis illo officiis? Repudiandae voluptas, voluptatem recusandae magnam a cupiditate voluptates! Labore similique omnis voluptatum animi."
               imgSrc="https://i.ytimg.com/vi/gfdzYIPjhBU/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLALLLb_jyU0UNk_ec7TLzv52Y1lIQ"
               imgOnRight={false}
+              screenSize={screenSize}
             />
             <ProjectCard
               name="Miku Notes Android"
@@ -359,6 +366,7 @@ export default function App() {
               description="Lorem ipsum dolor sit amet consectetur adipisicing elit. Dolore eos odio optio ducimus quos placeat voluptates necessitatibus ipsum maiores sint praesentium nulla doloribus, mollitia deleniti, accusantium id voluptatem nesciunt unde culpa reprehenderit dicta nostrum blanditiis illo officiis? Repudiandae voluptas, voluptatem recusandae magnam a cupiditate voluptates! Labore similique omnis voluptatum animi."
               imgSrc="https://i.ytimg.com/vi/8BTzfgKgo8k/hq720.jpg?sqp=-oaymwE2CNAFEJQDSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB_gmAAtAFigIMCAAQARgWID0ofzAP&rs=AOn4CLCROWEJzvZds2fz2XglxlTr2DxmzA"
               imgOnRight={true}
+              screenSize={screenSize}
             />
             <ProjectCard
               name="Professional work"
@@ -368,6 +376,7 @@ export default function App() {
               description="Lorem ipsum dolor sit amet consectetur adipisicing elit. Dolore eos odio optio ducimus quos placeat voluptates necessitatibus ipsum maiores sint praesentium nulla doloribus, mollitia deleniti, accusantium id voluptatem nesciunt unde culpa reprehenderit dicta nostrum blanditiis illo officiis? Repudiandae voluptas, voluptatem recusandae magnam a cupiditate voluptates! Labore similique omnis voluptatum animi."
               imgSrc="https://i.ytimg.com/vi/XfUao0_54yM/hqdefault.jpg?sqp=-oaymwEcCNACELwBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAPtoRC9Lf0gMBOQw5HG69FdKwUEA"
               imgOnRight={false}
+              screenSize={screenSize}
             />
           </div>
 
@@ -375,7 +384,7 @@ export default function App() {
             <a
               href="/projects"
               onClick={(e) => e.preventDefault()}
-              className="text-4xl text-indigo-400 hover:underline active:text-indigo-500 cursor-pointer select-none relative z-20"
+              className="text-3xl text-indigo-400 hover:underline active:text-indigo-500 cursor-pointer select-none md:text-4xl relative z-20"
             >
               All projects
             </a>

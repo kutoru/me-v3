@@ -1,3 +1,5 @@
+import CloseIcon from "../assets/close.svg?react";
+
 export default function ProficiencyWindow({
   isShown,
   setIsShown,
@@ -58,21 +60,30 @@ export default function ProficiencyWindow({
     <div
       onClick={() => setIsShown(false)}
       className={
-        "fixed top-0 left-0 size-full z-50 bg-black bg-opacity-50 flex cursor-pointer px-8 md:px-16 transition-all" +
+        "fixed top-0 left-0 size-full z-50 bg-black bg-opacity-50 flex cursor-pointer md:px-16 transition-all" +
         (!isShown ? " invisible opacity-0" : "")
       }
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-black bg-opacity-85 m-auto rounded-md p-4 flex flex-col gap-2 lg:max-w-[650px] cursor-default"
+        className="bg-black bg-opacity-85 m-auto h-full max-h-full p-4 flex gap-2 md:rounded-md md:h-auto lg:max-w-[650px] cursor-default overflow-y-auto relative"
       >
-        <div className="text-3xl text-center font-bold mb-2">
-          Proficiency percentages
-        </div>
+        <button
+          onClick={() => setIsShown(false)}
+          className="absolute top-0 right-0 m-3 group/btn block size-9 hover:bg-[#ffffff30] active:bg-[#ffffff20] transition-all p-1 rounded-md md:m-4"
+        >
+          <CloseIcon className="size-full fill-white group-hover/btn:fill-gray-200 group-active/btn:fill-gray-300 transition-all" />
+        </button>
 
-        <table className="text-xl">
-          <tbody>{mapSkillInfoItems()}</tbody>
-        </table>
+        <div className="flex flex-col my-auto gap-4">
+          <div className="text-lg md:text-3xl text-center font-bold">
+            Proficiency percentages
+          </div>
+
+          <table className="md:text-xl">
+            <tbody>{mapSkillInfoItems()}</tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

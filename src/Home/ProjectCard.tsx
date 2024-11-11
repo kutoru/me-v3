@@ -2,6 +2,7 @@ import { useGSAP } from "@gsap/react";
 import RightIcon from "../assets/right.svg?react";
 import { useRef } from "react";
 import { gsap } from "gsap";
+import ScreenSize from "../types/ScreenSize";
 
 export default function ProjectCard({
   name,
@@ -11,6 +12,7 @@ export default function ProjectCard({
   description,
   imgSrc,
   imgOnRight,
+  screenSize,
 }: {
   name: string;
   link: string;
@@ -19,33 +21,31 @@ export default function ProjectCard({
   description: string;
   imgSrc: string;
   imgOnRight: boolean;
+  screenSize: ScreenSize;
 }) {
   const projectContainer = useRef<HTMLDivElement>(null);
   const imageContainer = useRef<HTMLDivElement>(null);
 
   useGSAP(() => {
-    const stConfig = {
-      trigger: projectContainer.current,
-      toggleActions: "restart none none reverse",
-      start: "top 75%",
-    };
-
-    const offsetDistance =
-      projectContainer.current!.getBoundingClientRect().width;
-
-    gsap.from(projectContainer.current, {
-      scrollTrigger: stConfig,
-      x: imgOnRight ? offsetDistance * -1 : offsetDistance,
+    const defaultConfig = {
+      scrollTrigger: {
+        trigger: projectContainer.current,
+        toggleActions: "restart none none reverse",
+        start: "top 75%",
+      },
       ease: "power2.out",
       duration: 2,
+    };
+
+    gsap.from(projectContainer.current, {
+      ...defaultConfig,
+      x: imgOnRight ? "-100%" : "100%",
     });
 
     const parent = projectContainer.current!.parentElement!;
     gsap.from(parent, {
-      scrollTrigger: stConfig,
+      ...defaultConfig,
       borderColor: "rgba(99,102,241,0)",
-      ease: "power2.out",
-      duration: 2,
     });
 
     animateImageContainer();
@@ -72,9 +72,30 @@ export default function ProjectCard({
     });
   }
 
+  function getSmallTextSection() {
+    return (
+      <div className="flex-1 flex flex-col p-2">
+        <div className="flex">
+          {!imgOnRight && getImageSection()}
+
+          <div className="flex-1 text-center my-auto">
+            <div className="text-2xl font-bold">{name}</div>
+            <div className="text-gray-400">
+              {start} - {end}
+            </div>
+          </div>
+
+          {imgOnRight && getImageSection()}
+        </div>
+
+        <div className="mt-2">{description}</div>
+      </div>
+    );
+  }
+
   function getTextSection() {
     return (
-      <div className="flex-1 p-4 flex flex-col">
+      <div className="flex-1 flex flex-col p-2 gap-2 lg:p-4 lg:gap-4">
         <div className="flex">
           <div className="flex-1 text-2xl font-bold">{name}</div>
 
@@ -85,7 +106,7 @@ export default function ProjectCard({
           </div>
         </div>
 
-        <div className="mt-4 flex-1">
+        <div className="flex-1">
           <span className="my-auto">{description}</span>
         </div>
       </div>
@@ -96,10 +117,17 @@ export default function ProjectCard({
     return (
       <div
         ref={imageContainer}
-        className="group/img size-48 overflow-hidden relative cursor-pointer"
+        className={
+          "group/img overflow-hidden relative cursor-pointer" +
+          " size-24 border-gray-800 border-opacity-50 border-b-2 -mt-2" +
+          (imgOnRight
+            ? " border-s-2 -me-2 rounded-es-md"
+            : " border-e-2 -ms-2 rounded-ee-md") +
+          " md:size-52 xl:size-48 md:border-0 md:m-0 md:rounded-none"
+        }
       >
         <img
-          className="size-48 object-cover transition-all scale-125 group-hover/img:scale-100"
+          className="size-24 object-cover transition-all scale-125 group-hover/img:scale-100 md:size-52 xl:size-48"
           src={imgSrc}
         />
 
@@ -117,21 +145,28 @@ export default function ProjectCard({
     <div
       className={
         "py-2 border-indigo-500 z-20 overflow-hidden" +
-        (imgOnRight ? " border-l-4" : " border-r-4")
+        (imgOnRight
+          ? " border-l-2 pe-0.5 md:border-l-4 md:pe-1"
+          : " border-r-2 ps-0.5 md:border-r-4 md:ps-1") +
+        " lg:px-0"
       }
     >
       <div
         ref={projectContainer}
         className={
-          "group/card border-2 border-gray-800 border-opacity-50 flex rounded-md overflow-hidden bg-dark-800 bg-opacity-75" +
-          (imgOnRight
-            ? " rounded-s-none border-l-0"
-            : " rounded-e-none border-r-0")
+          "group/card border-2 border-gray-800 border-opacity-50 flex flex-col overflow-hidden bg-dark-800 bg-opacity-75 md:flex-row" +
+          (imgOnRight ? " rounded-e-md border-l-0" : " rounded-s-md border-r-0")
         }
       >
-        {imgOnRight ? getTextSection() : getImageSection()}
-        <div className="flex-none w-0.5 bg-gray-800 bg-opacity-50" />
-        {imgOnRight ? getImageSection() : getTextSection()}
+        {screenSize === ScreenSize.SM ? (
+          getSmallTextSection()
+        ) : (
+          <>
+            {imgOnRight ? getTextSection() : getImageSection()}
+            <div className="hidden flex-none w-0.5 bg-gray-800 bg-opacity-50 md:block" />
+            {imgOnRight ? getImageSection() : getTextSection()}
+          </>
+        )}
       </div>
     </div>
   );
