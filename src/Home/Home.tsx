@@ -280,7 +280,7 @@ export default function Home() {
             </span>
           </div>
 
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col">
             <ExpandedSkillCard
               name="TypeScript"
               percentage={80}
@@ -303,26 +303,101 @@ export default function Home() {
             />
           </div>
 
-          <div className="text-center text-3xl md:text-4xl my-8">
+          <div className="text-center text-3xl md:text-4xl mb-8 mt-4">
             My other skills include
           </div>
 
-          <div className="grid grid-cols-2 gap-2 px-2 mb-2 md:grid-cols-4 md:gap-4 md:px-4 lg:px-0 md:mb-4 lg:mb-8">
-            <SkillCard name="Rust" percentage={80} />
-            <SkillCard name="Go" percentage={50} />
-            <SkillCard name="SQL" percentage={70} />
-            <SkillCard name="Skill 1" percentage={30} />
-            <SkillCard name="Skill 2" percentage={50} />
-            <SkillCard name="Skill 3" percentage={90} />
-            <SkillCard name="Skill 4" percentage={20} />
-            <SkillCard name="Skill 5" percentage={30} />
-            <SkillCard name="Skill 6" percentage={66} />
-            <SkillCard name="Skill 7" percentage={92} />
-            <SkillCard name="Skill 8" percentage={38} />
-            <SkillCard name="Skill 9" percentage={81} />
-            <SkillCard name="Skill 10" percentage={59} />
-            <SkillCard name="Skill 11" percentage={76} />
-            <SkillCard name="Skill 12" percentage={13} />
+          <div className="grid grid-cols-2 px-1 mb-1 md:grid-cols-4 lg:px-0 lg:mb-6">
+            <SkillCard
+              name="Rust"
+              percentage={80}
+              index={0}
+              screenSize={screenSize}
+            />
+            <SkillCard
+              name="Go"
+              percentage={50}
+              index={1}
+              screenSize={screenSize}
+            />
+            <SkillCard
+              name="SQL"
+              percentage={70}
+              index={2}
+              screenSize={screenSize}
+            />
+            <SkillCard
+              name="Skill 1"
+              percentage={30}
+              index={3}
+              screenSize={screenSize}
+            />
+            <SkillCard
+              name="Skill 2"
+              percentage={50}
+              index={4}
+              screenSize={screenSize}
+            />
+            <SkillCard
+              name="Skill 3"
+              percentage={90}
+              index={5}
+              screenSize={screenSize}
+            />
+            <SkillCard
+              name="Skill 4"
+              percentage={20}
+              index={6}
+              screenSize={screenSize}
+            />
+            <SkillCard
+              name="Skill 5"
+              percentage={30}
+              index={7}
+              screenSize={screenSize}
+            />
+            <SkillCard
+              name="Skill 6"
+              percentage={66}
+              index={8}
+              screenSize={screenSize}
+            />
+            <SkillCard
+              name="Skill 7"
+              percentage={92}
+              index={9}
+              screenSize={screenSize}
+            />
+            <SkillCard
+              name="Skill 8"
+              percentage={38}
+              index={10}
+              screenSize={screenSize}
+            />
+            <SkillCard
+              name="Skill 9"
+              percentage={81}
+              index={11}
+              screenSize={screenSize}
+            />
+            <SkillCard
+              name="Skill 10"
+              percentage={59}
+              index={12}
+              screenSize={screenSize}
+            />
+            <SkillCard
+              name="Skill 11"
+              percentage={76}
+              index={13}
+              screenSize={screenSize}
+            />
+            <SkillCard
+              name="Skill 12"
+              percentage={13}
+              index={14}
+              screenSize={screenSize}
+            />
           </div>
         </div>
       </div>
