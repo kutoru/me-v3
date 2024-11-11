@@ -211,10 +211,10 @@ export default function Home() {
           height: `calc(100dvh - ${headerHeight}px)`,
         }}
       >
-        <div className="flex mx-auto size-full lg:max-w-4xl xl:max-w-6xl cursor-default">
+        <div className="flex mx-auto size-full lg:max-w-4xl xl:max-w-6xl cursor-default overflow-y-auto">
           <div className="flex flex-col gap-0 md:flex-row md:gap-0 my-auto w-full">
-            <div className="border-s-2 px-4 py-2 flex-1 border-indigo-500 md:ps-8 md:pe-0 md:py-4 md:text-4xl md:border-s-4 z-20 overflow-hidden">
-              <div ref={introText}>
+            <div className="flex-1 flex border-indigo-500 border-s-2 md:border-s-4 px-4 py-2 md:px-6 md:py-3 lg:px-8 lg:py-4 md:text-2xl lg:text-3xl xl:text-4xl z-20 overflow-hidden">
+              <div ref={introText} className="my-auto">
                 Lorem ipsum dolor sit amet consectetur adipisicing elit. Dolor
                 neque iste cupiditate perferendis, necessitatibus quod quasi
                 soluta, debitis cumque accusamus nulla quia qui labore
@@ -229,7 +229,7 @@ export default function Home() {
 
             <div
               ref={introButtons}
-              className="flex flex-col justify-evenly border-s-2 p-4 pt-2 gap-4 border-indigo-500 md:border-s-4 md:ms-16 md:ps-8 md:pe-0 md:py-8 md:gap-8 z-20 overflow-hidden"
+              className="flex flex-col justify-evenly border-indigo-500 border-s-2 md:border-s-4 p-4 pt-2 md:p-6 lg:p-8 gap-4 md:gap-6 lg:gap-8 z-20 overflow-hidden"
             >
               <IntroButton href="/about-me" onClick={() => {}} icon="up">
                 About my <br className="hidden md:block" />

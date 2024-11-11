@@ -26,37 +26,43 @@ export default function ProjectCard({
   const projectContainer = useRef<HTMLDivElement>(null);
   const imageContainer = useRef<HTMLDivElement>(null);
 
-  useGSAP(() => {
-    const defaultConfig = {
-      scrollTrigger: {
-        trigger: projectContainer.current,
-        toggleActions: "restart none none reverse",
-        start: "top 75%",
-      },
-      ease: "power2.out",
-      duration: 2,
-    };
+  useGSAP(
+    () => {
+      const defaultConfig = {
+        scrollTrigger: {
+          trigger: projectContainer.current,
+          toggleActions: "restart none none reverse",
+          start: "top 75%",
+        },
+        ease: "power2.out",
+        duration: 2,
+      };
 
-    gsap.from(projectContainer.current, {
-      ...defaultConfig,
-      x: imgOnRight ? "-100%" : "100%",
-    });
+      gsap.from(projectContainer.current, {
+        ...defaultConfig,
+        x: imgOnRight ? "-100%" : "100%",
+      });
 
-    const parent = projectContainer.current!.parentElement!;
-    gsap.from(parent, {
-      ...defaultConfig,
-      borderColor: "rgba(99,102,241,0)",
-    });
+      const parent = projectContainer.current!.parentElement!;
+      gsap.from(parent, {
+        ...defaultConfig,
+        borderColor: "rgba(99,102,241,0)",
+      });
 
-    animateImageContainer();
-  });
+      const cancelAnimation = animateImageContainer();
+      return () => cancelAnimation();
+    },
+    { dependencies: [screenSize], revertOnUpdate: true },
+  );
 
   function animateImageContainer(previousTl?: gsap.core.Timeline) {
     previousTl?.kill();
 
     const tl = gsap.timeline({
       defaults: { ease: "sine.inOut" },
-      onComplete: () => animateImageContainer(tl),
+      onComplete: () => {
+        animateImageContainer(tl);
+      },
     });
     tl.set(imageContainer.current!, {
       boxShadow: "0 0 25px 5px rgba(99,102,241,0)",
@@ -70,6 +76,8 @@ export default function ProjectCard({
       boxShadow: "0 0 25px 5px rgba(99,102,241,0)",
       duration: () => 2 + Math.random() * 3,
     });
+
+    return () => tl.kill();
   }
 
   function getSmallTextSection() {

@@ -15,7 +15,7 @@ export default function IntroButton({
 }) {
   function getIcon() {
     const className =
-      "my-auto size-8 md:size-10 group-hover/btn:scale-125 transition-all group-hover/btn:drop-shadow-[0_0_5px_hsla(0,0%,100%,0.25)] group-active/btn:fill-gray-300";
+      "my-auto size-8 md:size-9 lg:size-10 group-hover/btn:scale-125 transition-all group-hover/btn:drop-shadow-[0_0_5px_hsla(0,0%,100%,0.25)] group-active/btn:fill-gray-300";
 
     switch (icon) {
       case "up":
@@ -35,7 +35,7 @@ export default function IntroButton({
         onClick();
       }}
       className={
-        "flex bg-dark-600 bg-opacity-50 p-2 text-xl rounded-md border-2 border-black border-opacity-25 pointer-events-auto md:p-4 md:text-3xl" +
+        "flex bg-dark-600 bg-opacity-50 p-2 text-xl rounded-md border-2 border-black border-opacity-25 pointer-events-auto md:p-3 lg:p-4 md:text-2xl lg:text-3xl" +
         " group/btn transition-[border-color,background-color] hover:bg-dark-500 hover:bg-opacity-30 hover:border-opacity-75 hover:border-indigo-500 active:border-opacity-50"
       }
     >

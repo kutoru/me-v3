@@ -56,26 +56,28 @@ export default function ExpandedSkillCard({
         href={"/projects?skills=" + getSkillCode(name)}
         onClick={(e) => e.preventDefault()}
         className={
-          "group/block p-3 flex flex-col gap-3 flex-none md:rounded-b-md bg-dark-700" +
+          "group/block p-3 flex flex-none md:rounded-b-md bg-dark-700" +
           blockTransition
         }
       >
-        <div className="flex-1 flex text-2xl transition-all group-hover/block:scale-[1.01]">
-          <span className="m-auto">{name}</span>
-        </div>
-
-        <div className="flex gap-3 transition-all group-hover/block:scale-[0.975]">
-          <div className="flex-1 h-7 border-2 border-white rounded-md overflow-hidden md:w-40 md:flex-none">
-            <div
-              className={
-                "bg-indigo-500 h-full rounded-md border-4 border-dark-600" +
-                " transition-all group-hover/block:border-[0px] group-hover/block:rounded-none"
-              }
-              style={{ width: `${percentage}%` }}
-            />
+        <div className="my-auto flex-1">
+          <div className="flex-1 text-2xl text-center transition-all group-hover/block:scale-[1.01]">
+            {name}
           </div>
 
-          <span className="my-auto text-xl">{percentage}%</span>
+          <div className="mt-3 flex gap-3 transition-all group-hover/block:scale-[0.975]">
+            <div className="flex-1 h-7 border-2 border-white rounded-md overflow-hidden md:w-40 md:flex-none">
+              <div
+                className={
+                  "bg-indigo-500 h-full rounded-md border-4 border-dark-600" +
+                  " transition-all group-hover/block:border-[0px] group-hover/block:rounded-none"
+                }
+                style={{ width: `${percentage}%` }}
+              />
+            </div>
+
+            <span className="my-auto text-xl">{percentage}%</span>
+          </div>
         </div>
       </a>
 
